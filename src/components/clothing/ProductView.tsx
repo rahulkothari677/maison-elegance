@@ -19,6 +19,7 @@ import {
   Sparkles,
   Star,
   Search,
+  Bell,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCurrency } from "@/lib/use-currency";
@@ -311,51 +312,83 @@ export function ProductView() {
             )}
           </div>
 
-          {/* Quantity + Add to cart */}
-          <div className="flex gap-3">
-            <div className="flex items-center border border-border rounded-sm">
-              <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="w-12 h-12 flex items-center justify-center hover:bg-muted transition-colors"
-                aria-label="Decrease quantity"
+          {/* Quantity + Add to cart OR Notify Me (when out of stock) */}
+          {product.inStock === 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/5 px-4 py-3 rounded-sm">
+                <span className="w-2 h-2 bg-destructive rounded-full" />
+                <span className="font-medium">Out of Stock</span>
+              </div>
+              <Button
+                onClick={() => {
+                  toast.success("We'll notify you when this is back in stock!", {
+                    description: "You'll get an email as soon as it's available.",
+                  });
+                }}
+                className="w-full h-12 rounded-none text-sm tracking-wide-luxe uppercase"
               >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-12 text-center font-medium">{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => q + 1)}
-                className="w-12 h-12 flex items-center justify-center hover:bg-muted transition-colors"
-                aria-label="Increase quantity"
+                <Bell className="h-4 w-4 mr-2" />
+                Notify Me When Available
+              </Button>
+              <Button
+                onClick={() => toggleWishlist(product.id)}
+                variant="outline"
+                className="w-full h-11 rounded-none text-sm tracking-wide-luxe uppercase"
               >
-                <Plus className="h-4 w-4" />
-              </button>
+                <Heart
+                  className={cn("h-4 w-4 mr-2", isWishlisted && "fill-accent text-accent")}
+                />
+                Save to Wishlist
+              </Button>
             </div>
-            <Button
-              onClick={handleAddToCart}
-              className="flex-1 h-12 rounded-none text-sm tracking-wide-luxe uppercase"
-            >
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              Add to Bag
-            </Button>
-            <Button
-              onClick={() => toggleWishlist(product.id)}
-              variant="outline"
-              className="h-12 w-12 rounded-none p-0"
-              aria-label="Toggle wishlist"
-            >
-              <Heart
-                className={cn("h-5 w-5", isWishlisted && "fill-accent text-accent")}
-              />
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="flex gap-3">
+                <div className="flex items-center border border-border rounded-sm">
+                  <button
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="w-12 h-12 flex items-center justify-center hover:bg-muted transition-colors"
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-12 text-center font-medium">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="w-12 h-12 flex items-center justify-center hover:bg-muted transition-colors"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                <Button
+                  onClick={handleAddToCart}
+                  className="flex-1 h-12 rounded-none text-sm tracking-wide-luxe uppercase"
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Add to Bag
+                </Button>
+                <Button
+                  onClick={() => toggleWishlist(product.id)}
+                  variant="outline"
+                  className="h-12 w-12 rounded-none p-0"
+                  aria-label="Toggle wishlist"
+                >
+                  <Heart
+                    className={cn("h-5 w-5", isWishlisted && "fill-accent text-accent")}
+                  />
+                </Button>
+              </div>
 
-          <Button
-            onClick={handleBuyNow}
-            variant="outline"
-            className="w-full h-12 rounded-none text-sm tracking-wide-luxe uppercase border-2"
-          >
-            Buy Now
-          </Button>
+              <Button
+                onClick={handleBuyNow}
+                variant="outline"
+                className="w-full h-12 rounded-none text-sm tracking-wide-luxe uppercase border-2"
+              >
+                Buy Now
+              </Button>
+            </>
+          )}
 
           {/* Estimated delivery + Stock alert */}
           {(() => {

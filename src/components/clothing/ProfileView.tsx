@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import type { ProfileTab, Address, PaymentMethod } from "@/lib/store";
 import { AuthModal } from "./AuthModal";
+import { OrderTimeline } from "./OrderTimeline";
 
 const tabs: { id: ProfileTab; label: string; icon: any }[] = [
   { id: "overview", label: "Overview", icon: User },
@@ -588,7 +589,14 @@ export function ProfileView() {
                       </div>
                     </div>
                     <div className="p-5">
-                      <div className="space-y-4">
+                      {/* Order timeline */}
+                      <OrderTimeline
+                        status={order.status}
+                        trackingNumber={order.trackingNumber}
+                        createdAt={order.createdAt}
+                      />
+
+                      <div className="space-y-4 mt-5">
                         {order.items.map((item, i) => (
                           <div
                             key={i}
@@ -1181,6 +1189,156 @@ export function ProfileView() {
                 Earn 1 point per $1 spent. Points never expire. Use points for
                 discounts, exclusive pieces, and private event access.
               </p>
+
+              {/* Referral Program */}
+              <h3 className="font-serif text-xl pt-4">Refer a Friend</h3>
+              <div className="border border-border rounded-sm p-6 bg-secondary/20">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Give $25, get $25. Share your referral code with friends.
+                      When they make their first purchase, you both get $25 off
+                      your next order.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-background border-2 border-dashed border-accent/40 rounded-sm px-4 py-2">
+                        <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                          Your Code
+                        </p>
+                        <p className="font-mono font-bold text-lg text-accent">
+                          MAISON-{(profile.email || "USER").slice(0, 4).toUpperCase()}-2026
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="rounded-sm"
+                        onClick={() => {
+                          const code = `MAISON-${(profile.email || "USER").slice(0, 4).toUpperCase()}-2026`;
+                          const url = `${window.location.origin}/?ref=${code}`;
+                          navigator.clipboard.writeText(url).then(() => {
+                            toast.success("Referral link copied!", {
+                              description: "Share it with friends — you both get $25",
+                            });
+                          }).catch(() => {
+                            toast.success("Referral code copied!");
+                          });
+                        }}
+                      >
+                        <Gift className="h-4 w-4 mr-1.5" />
+                        Copy Link
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-center shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center mx-auto mb-2">
+                      <Gift className="h-7 w-7 text-accent" />
+                    </div>
+                    <p className="font-serif text-2xl">$25</p>
+                    <p className="text-xs text-muted-foreground">per referral</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-border">
+                  <div className="text-center">
+                    <p className="font-serif text-xl">0</p>
+                    <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Friends Referred
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-serif text-xl">$0</p>
+                    <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Credit Earned
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-serif text-xl">$0</p>
+                    <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Credit Available
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* GIFT CARDS */}
+          {profileTab === "settings" && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <h2 className="font-serif text-2xl">Gift Cards</h2>
+
+              {/* Buy gift card */}
+              <div className="border border-border rounded-sm p-6">
+                <h3 className="font-serif text-lg mb-4">Purchase a Digital Gift Card</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Perfect for gifting. Recipient receives a beautifully designed
+                  email with their gift card code — redeemable on any order.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  {[50, 100, 250, 500].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() =>
+                        toast.success(`$${amount} gift card added to bag`, {
+                          description: "Recipient details collected at checkout",
+                        })
+                      }
+                      className="border-2 border-border hover:border-accent rounded-sm p-4 text-center transition-all hover:bg-accent/5"
+                    >
+                      <p className="font-serif text-2xl">${amount}</p>
+                      <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground mt-1">
+                        Gift Card
+                      </p>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  onClick={() =>
+                    toast.success("Custom gift card added to bag", {
+                      description: "Enter any amount at checkout",
+                    })
+                  }
+                  variant="outline"
+                  className="rounded-sm w-full sm:w-auto"
+                >
+                  Custom Amount
+                </Button>
+              </div>
+
+              {/* Redeem gift card */}
+              <div className="border border-border rounded-sm p-6">
+                <h3 className="font-serif text-lg mb-4">Redeem a Gift Card</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Have a gift card code? Enter it below to add credit to your
+                  account.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. ME-GIFT-XXXX-XXXX"
+                    className="rounded-sm font-mono"
+                  />
+                  <Button
+                    onClick={() => {
+                      toast.success("Gift card applied!", {
+                        description: "Credit added to your account balance",
+                      });
+                    }}
+                    className="rounded-sm shrink-0"
+                  >
+                    <Check className="h-4 w-4 mr-1.5" />
+                    Apply
+                  </Button>
+                </div>
+                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Current balance
+                  </span>
+                  <span className="font-serif text-xl">$0.00</span>
+                </div>
+              </div>
             </motion.div>
           )}
 

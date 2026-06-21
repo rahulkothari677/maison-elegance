@@ -6,6 +6,7 @@ import { products, heroImages, getProductById } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./ProductCard";
+import { FlashSaleSection } from "./FlashSale";
 import { useRef } from "react";
 
 const fadeUp = {
@@ -269,6 +270,9 @@ export function HomeView() {
           ))}
         </motion.div>
       </section>
+
+      {/* FLASH SALE */}
+      <FlashSaleSection />
 
       {/* Editorial Split */}
       <section className="bg-secondary/40 border-y border-border">
