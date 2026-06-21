@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  passwordHash  String?
+  phone         String?
+  dob           String?
+  gender        String?
+  avatar        String?
+  memberSince   String         @default("Now")
+  tier          String         @default("Silver")
+  loyaltyPoints Int            @default(0)
+  lifetimeSpend Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  addresses     Address[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── CATALOG ─────────────────────────────────────────────────────────────────
+
+model Product {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  brand           String   @default("MAISON ÉLÉGANCE")
+  category        String
+  subcategory     String
+  price           Int
+  compareAtPrice  Int?
+  currency        String   @default("USD")
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+  images          String   // JSON array as string (SQLite limitation)
+  colors          String   // JSON array
+  sizes           String   // JSON array
+  badge           String?
+  description     String
+  shortDescription String
+  materials       String   // JSON array
+  craftsmanship   String
+  care            String
+  origin          String
+  sustainability  String
+  fit             String
+  features        String   // JSON array
+  sku             String   @unique
+  inStock         Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reviews       Review[]
+  orderItems OrderItem[]
+  wishlistItems WishlistItem[]
+}
+
+// ─── COMMERCE ────────────────────────────────────────────────────────────────
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  userId          String?
+  guestEmail      String?
+  status          String      @default("Confirmed")
+  subtotal        Int
+  shipping        Int
+  tax             Int
+  total           Int
+  shippingAddress String
+  trackingNumber  String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  image     String
+  size      String
+  color     String
+  quantity  Int
+  price     Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  label      String
+  fullName   String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String
+  phone      String
+  isDefault  Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String?
+  authorName String
+  rating    Int
+  title     String?
+  body      String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([productId, userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
