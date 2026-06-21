@@ -139,7 +139,7 @@ export function HomeView() {
           <motion.button
             variants={fadeUp}
             onClick={() => {
-              setCategory("Outerwear");
+              setCategory("outerwear");
               setView("shop");
             }}
             className="group relative md:row-span-2 aspect-[3/4] md:aspect-auto overflow-hidden rounded-sm text-left"
@@ -168,7 +168,7 @@ export function HomeView() {
           <motion.button
             variants={fadeUp}
             onClick={() => {
-              setCategory("Women");
+              setCategory("women");
               setView("shop");
             }}
             className="group relative aspect-[3/4] md:aspect-[4/3] overflow-hidden rounded-sm text-left"
@@ -193,7 +193,7 @@ export function HomeView() {
           <motion.button
             variants={fadeUp}
             onClick={() => {
-              setCategory("Men");
+              setCategory("men");
               setView("shop");
             }}
             className="group relative aspect-[3/4] md:aspect-[4/3] overflow-hidden rounded-sm text-left"

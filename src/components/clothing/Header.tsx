@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronDown,
   LogOut,
   Crown,
   Home,
@@ -52,11 +53,21 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [mobileCategoryTree, setMobileCategoryTree] = useState<any[]>([]);
+  const [expandedMobileCat, setExpandedMobileCat] = useState<string | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Fetch top-level categories for mobile menu
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => setMobileCategoryTree(data.tree || []))
+      .catch(() => {});
   }, []);
 
   const count = cartCount(cart);
@@ -182,16 +193,56 @@ export function Header() {
                         </span>
                         <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                       </button>
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => handleNav(cat)}
-                          className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
-                        >
-                          <span className="text-lg font-serif">{cat}</span>
-                          <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                        </button>
+                      {mobileCategoryTree.map((cat) => (
+                        <div key={cat.id}>
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => handleNav(cat.slug)}
+                              className="flex-1 flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                            >
+                              <span className="text-lg font-serif">
+                                {cat.name}
+                              </span>
+                              <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                            </button>
+                            {cat.children?.length > 0 && (
+                              <button
+                                onClick={() =>
+                                  setExpandedMobileCat(
+                                    expandedMobileCat === cat.id ? null : cat.id
+                                  )
+                                }
+                                className="ml-2 p-2 hover:bg-muted rounded-sm"
+                                aria-label="Expand subcategories"
+                              >
+                                {expandedMobileCat === cat.id ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 rotate-90" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          {expandedMobileCat === cat.id && cat.children?.length > 0 && (
+                            <div className="pl-4 pb-2 space-y-1 border-l border-border ml-2">
+                              {cat.children.map((sub: any) => (
+                                <button
+                                  key={sub.id}
+                                  onClick={() => handleNav(sub.slug)}
+                                  className="block w-full text-left py-2 text-sm text-muted-foreground hover:text-accent transition-colors"
+                                >
+                                  {sub.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
+                      {mobileCategoryTree.length === 0 && (
+                        <p className="text-xs text-muted-foreground py-2">
+                          Loading categories...
+                        </p>
+                      )}
                       <div className="h-px bg-border my-4" />
                       {isAuthenticated ? (
                         <>

@@ -72,6 +72,26 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ─── CATEGORIES (multi-level hierarchy) ─────────────────────────────────────
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  parentId    String?
+  icon        String?
+  image       String?
+  description String?
+  order       Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+}
+
 // ─── CATALOG ─────────────────────────────────────────────────────────────────
 
 model Product {
@@ -103,6 +123,11 @@ model Product {
   inStock         Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Optional link to structured Category (multi-level). When null, falls back
+  // to the flat `category` + `subcategory` string fields for backward compat.
+  categoryId      String?
+  categoryRef     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   reviews       Review[]
   orderItems OrderItem[]
@@ -170,6 +195,7 @@ model Review {
   rating    Int
   title     String?
   body      String
+  images    String?  // JSON array of image URLs (customer photos)
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())
 

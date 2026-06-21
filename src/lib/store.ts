@@ -316,7 +316,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       view: "home",
       selectedProductId: null,
-      selectedCategory: "All",
+      selectedCategory: "all",
       profileTab: "overview",
       lastViewedProductIds: [],
       lastOrderId: null,

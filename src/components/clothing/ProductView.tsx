@@ -313,13 +313,50 @@ export function ProductView() {
             Buy Now
           </Button>
 
-          {/* Stock alert */}
-          {product.inStock <= 10 && (
-            <div className="flex items-center gap-2 text-sm text-accent bg-accent/10 px-4 py-2.5 rounded-sm">
-              <Sparkles className="h-4 w-4" />
-              <span>Only {product.inStock} pieces remaining</span>
-            </div>
-          )}
+          {/* Estimated delivery + Stock alert */}
+          {(() => {
+            // Calculate estimated delivery date (3-5 business days from now)
+            const now = new Date();
+            const minDate = new Date(now);
+            const maxDate = new Date(now);
+            let minDays = 0;
+            let maxDays = 0;
+            while (minDays < 3) {
+              minDate.setDate(minDate.getDate() + 1);
+              if (minDate.getDay() !== 0 && minDate.getDay() !== 6) minDays++;
+            }
+            while (maxDays < 5) {
+              maxDate.setDate(maxDate.getDate() + 1);
+              if (maxDate.getDay() !== 0 && maxDate.getDay() !== 6) maxDays++;
+            }
+            const fmt = (d: Date) =>
+              d.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              });
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm bg-secondary/40 px-4 py-2.5 rounded-sm">
+                  <Truck className="h-4 w-4 text-accent shrink-0" />
+                  <span>
+                    <span className="text-muted-foreground">Estimated delivery: </span>
+                    <span className="font-medium">
+                      {fmt(minDate)} – {fmt(maxDate)}
+                    </span>
+                  </span>
+                </div>
+                {product.inStock <= 10 && (
+                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-sm">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="font-medium">
+                      Only {product.inStock} left — order soon
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Service icons */}
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border">

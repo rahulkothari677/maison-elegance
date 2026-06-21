@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
         brand: body.brand || "MAISON ÉLÉGANCE",
         category: body.category,
         subcategory: body.subcategory || "",
+        categoryId: body.categoryId || null,
         price: parseInt(body.price),
         compareAtPrice: body.compareAtPrice
           ? parseInt(body.compareAtPrice)

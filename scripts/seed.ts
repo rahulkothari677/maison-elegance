@@ -16,13 +16,127 @@ async function main() {
   await db.order.deleteMany();
   await db.address.deleteMany();
   await db.product.deleteMany();
+  await db.category.deleteMany();
   await db.session.deleteMany();
   await db.account.deleteMany();
   await db.user.deleteMany();
 
-  // 1. Seed products
+  // 0. Seed categories (multi-level hierarchy)
+  console.log("📂 Seeding categories...");
+  const categoryTree: Record<string, Record<string, string[]>> = {
+    women: {
+      Dresses: ["Evening", "Casual", "Midi", "Maxi"],
+      Tops: ["Blouses", "T-Shirts", "Knitwear"],
+      Bottoms: ["Trousers", "Skirts", "Shorts"],
+      Outerwear: ["Coats", "Jackets", "Blazers"],
+      Footwear: ["Heels", "Flats", "Sneakers", "Boots"],
+      Accessories: ["Bags", "Scarves", "Eyewear", "Belts"],
+    },
+    men: {
+      Tops: ["T-Shirts", "Polos", "Shirts", "Henleys"],
+      Bottoms: ["Jeans", "Trousers", "Chinos", "Shorts"],
+      Outerwear: ["Coats", "Jackets", "Blazers", "Overshirts"],
+      Footwear: ["Sneakers", "Boots", "Loafers", "Oxfords"],
+      Accessories: ["Sunglasses", "Watches", "Belts", "Wallets", "Scarves"],
+      Grooming: ["Fragrance", "Skincare"],
+    },
+    outerwear: {
+      Coats: ["Wool", "Trench", "Overcoat"],
+      Jackets: ["Leather", "Bomber", "Denim"],
+      Blazers: ["Structured", "Unstructured"],
+      Overshirts: ["Wool", "Cotton"],
+    },
+    footwear: {
+      Boots: ["Chelsea", "Chukka", "Combat"],
+      Sneakers: ["Court", "Runner", "High-Top"],
+      Heels: ["Stiletto", "Block", "Kitten"],
+      Loafers: ["Penny", "Tassel", "Bit"],
+    },
+    accessories: {
+      Bags: ["Tote", "Crossbody", "Clutch"],
+      Eyewear: ["Sunglasses", "Optical"],
+      Watches: ["Automatic", "Quartz"],
+      Scarves: ["Silk", "Cashmere", "Wool"],
+      Wallets: ["Cardholder", "Bifold", "Long"],
+      Belts: ["Leather", "Reversible"],
+    },
+  };
+
+  const categorySlugToId: Record<string, string> = {};
+
+  for (const [topSlug, subcats] of Object.entries(categoryTree)) {
+    const topName = topSlug.charAt(0).toUpperCase() + topSlug.slice(1);
+    const topCat = await db.category.create({
+      data: {
+        name: topName,
+        slug: topSlug,
+        order: Object.keys(categoryTree).indexOf(topSlug),
+        description: `Premium ${topName.toLowerCase()} collection`,
+      },
+    });
+    categorySlugToId[topSlug] = topCat.id;
+
+    let subOrder = 0;
+    for (const [subName, subsubs] of Object.entries(subcats)) {
+      const subSlug = `${topSlug}-${subName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+      const subCat = await db.category.create({
+        data: {
+          name: subName,
+          slug: subSlug,
+          parentId: topCat.id,
+          order: subOrder++,
+        },
+      });
+      categorySlugToId[subSlug] = subCat.id;
+
+      let subsubOrder = 0;
+      for (const subsubName of subsubs) {
+        const subsubSlug = `${subSlug}-${subsubName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+        const subsubCat = await db.category.create({
+          data: {
+            name: subsubName,
+            slug: subsubSlug,
+            parentId: subCat.id,
+            order: subsubOrder++,
+          },
+        });
+        categorySlugToId[subsubSlug] = subsubCat.id;
+      }
+    }
+  }
+  console.log(`✅ ${Object.keys(categorySlugToId).length} categories seeded`);
+
+  // 1. Seed products (now with categoryId links)
   console.log(`📦 Seeding ${products.length} products...`);
   for (const p of products) {
+    // Map product subcategory to a category ID
+    let categorySlug = "";
+    const cat = p.category.toLowerCase();
+    const sub = p.subcategory.toLowerCase();
+    // Try sub-sub first (most specific)
+    const possibleSlugs = [
+      `${cat}-${sub}-${p.name.toLowerCase().includes("shirt") ? "shirts" : ""}`.replace(/-$/, ""),
+      `${cat}-${sub}`,
+      cat,
+    ];
+    for (const slug of possibleSlugs) {
+      if (categorySlugToId[slug]) {
+        categorySlug = slug;
+        break;
+      }
+    }
+    // Fallback: find a sub-sub under the top + sub
+    if (!categorySlug) {
+      const topCat = categorySlugToId[cat];
+      if (topCat) {
+        const subs = Object.keys(categorySlugToId).filter(
+          (s) => s.startsWith(`${cat}-`) && s.split("-").length === 2
+        );
+        if (subs.length > 0) categorySlug = subs[0];
+      }
+    }
+    const categoryId = categorySlug ? categorySlugToId[categorySlug] : null;
+
     await db.product.upsert({
       where: { slug: p.id },
       update: {},
@@ -32,6 +146,7 @@ async function main() {
         brand: p.brand,
         category: p.category,
         subcategory: p.subcategory,
+        categoryId,
         price: p.price,
         compareAtPrice: p.compareAtPrice ?? null,
         currency: p.currency,

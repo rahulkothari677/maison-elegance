@@ -22,6 +22,10 @@ import {
   CheckCircle2,
   Clock,
   Radio,
+  FolderTree,
+  ChevronRight,
+  ChevronDown,
+  Folder,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useStore } from "@/lib/store";
@@ -47,7 +51,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "overview" | "products" | "orders" | "customers";
+type AdminTab = "overview" | "products" | "orders" | "customers" | "categories";
 
 type Stats = {
   totalProducts: number;
@@ -220,6 +224,7 @@ export function AdminView() {
             ["products", "Products", Package],
             ["orders", "Orders", ShoppingCart],
             ["customers", "Customers", Users],
+            ["categories", "Categories", FolderTree],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -270,6 +275,7 @@ export function AdminView() {
         {tab === "products" && <ProductsTab />}
         {tab === "orders" && <OrdersTab />}
         {tab === "customers" && <CustomersTab />}
+        {tab === "categories" && <CategoriesTab />}
       </motion.div>
     </div>
   );
@@ -904,6 +910,32 @@ function ProductDialog({
 }) {
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [structuredCats, setStructuredCats] = useState<
+    { id: string; name: string; path: string; slug: string }[]
+  >([]);
+
+  // Fetch structured categories for the picker
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((data) => {
+        const flat: any[] = [];
+        const walk = (cats: any[], prefix: string) => {
+          for (const c of cats || []) {
+            flat.push({
+              id: c.id,
+              name: c.name,
+              path: prefix + c.name,
+              slug: c.slug,
+            });
+            walk(c.children || [], prefix + c.name + " › ");
+          }
+        };
+        walk(data.tree || [], "");
+        setStructuredCats(flat);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -913,6 +945,7 @@ function ProductDialog({
           brand: product.brand,
           category: product.category,
           subcategory: product.subcategory,
+          categoryId: (product as any).categoryId || "",
           price: product.price,
           compareAtPrice: product.compareAtPrice || "",
           images: product.images.join("\n"),
@@ -934,6 +967,7 @@ function ProductDialog({
           brand: "MAISON ÉLÉGANCE",
           category: "Women",
           subcategory: "",
+          categoryId: "",
           price: "",
           compareAtPrice: "",
           images: "",
@@ -1062,6 +1096,31 @@ function ProductDialog({
                 }
                 className="rounded-sm"
               />
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs mb-1.5 block">
+                Structured Category (new — appears in mega menu)
+              </Label>
+              <Select
+                value={form.categoryId || "none"}
+                onValueChange={(v) =>
+                  setForm({ ...form, categoryId: v === "none" ? "" : v })
+                }
+              >
+                <SelectTrigger className="rounded-sm">
+                  <SelectValue placeholder="— None (use flat category above) —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    — None (use flat category above) —
+                  </SelectItem>
+                  {structuredCats.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.path}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-xs mb-1.5 block">Price (USD) *</Label>
@@ -1294,4 +1353,448 @@ function getTierClass(tier: string) {
     default:
       return "bg-gray-100 text-gray-800";
   }
+}
+
+// ─── CATEGORIES (multi-level hierarchy management) ─────────────────────────
+
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  icon: string | null;
+  image: string | null;
+  description: string | null;
+  order: number;
+  isActive: boolean;
+  children: Category[];
+};
+
+function CategoriesTab() {
+  const [tree, setTree] = useState<Category[]>([]);
+  const [flatCats, setFlatCats] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => setLoading(true));
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
+          setTree(data.tree || []);
+          setFlatCats(data.categories || []);
+          // Auto-expand top-level
+          setExpanded(new Set((data.tree || []).map((c: Category) => c.id)));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
+  const refresh = () => setRefreshKey((k) => k + 1);
+
+  const toggleExpand = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDelete = async (cat: Category) => {
+    if (cat.children.length > 0) {
+      toast.error(
+        `Cannot delete "${cat.name}" — has ${cat.children.length} subcategories. Delete or move them first.`
+      );
+      return;
+    }
+    if (!confirm(`Delete category "${cat.name}"? Products in this category will be uncategorized.`)) return;
+    const res = await fetch(`/api/admin/categories/${cat.id}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      toast.success("Category deleted");
+      refresh();
+    } else {
+      const data = await res.json();
+      toast.error(data.error || "Failed to delete");
+    }
+  };
+
+  const toggleActive = async (cat: Category) => {
+    const res = await fetch(`/api/admin/categories/${cat.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !cat.isActive }),
+    });
+    if (res.ok) {
+      toast.success(`${cat.name} ${cat.isActive ? "hidden" : "activated"}`);
+      refresh();
+    }
+  };
+
+  if (loading) return <Loading />;
+
+  const renderCategory = (cat: Category, depth = 0) => (
+    <div key={cat.id}>
+      <div
+        className={cn(
+          "flex items-center gap-3 py-3 px-3 hover:bg-muted/30 transition-colors border-b border-border",
+          !cat.isActive && "opacity-50"
+        )}
+        style={{ paddingLeft: `${12 + depth * 24}px` }}
+      >
+        {cat.children.length > 0 ? (
+          <button
+            onClick={() => toggleExpand(cat.id)}
+            className="w-6 h-6 flex items-center justify-center rounded hover:bg-muted shrink-0"
+            aria-label={expanded.has(cat.id) ? "Collapse" : "Expand"}
+          >
+            {expanded.has(cat.id) ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        ) : (
+          <div className="w-6 h-6 flex items-center justify-center shrink-0">
+            <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+        )}
+
+        {cat.image && (
+          <img
+            src={cat.image}
+            alt={cat.name}
+            className="w-8 h-8 object-cover rounded shrink-0"
+          />
+        )}
+
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm">{cat.name}</p>
+          <p className="text-xs text-muted-foreground font-mono">/{cat.slug}</p>
+        </div>
+
+        {cat.description && (
+          <p className="text-xs text-muted-foreground hidden lg:block max-w-xs truncate">
+            {cat.description}
+          </p>
+        )}
+
+        <Badge
+          variant="secondary"
+          className="rounded-sm text-xs shrink-0"
+        >
+          {cat.children.length} sub{cat.children.length !== 1 ? "s" : ""}
+        </Badge>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 text-xs shrink-0"
+          onClick={() => toggleActive(cat)}
+        >
+          {cat.isActive ? "Hide" : "Show"}
+        </Button>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 shrink-0"
+          onClick={() => {
+            setEditingCat(cat);
+            setDialogOpen(true);
+          }}
+          aria-label="Edit"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 shrink-0 text-destructive hover:text-destructive"
+          onClick={() => handleDelete(cat)}
+          aria-label="Delete"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      {cat.children.length > 0 && expanded.has(cat.id) && (
+        <div>
+          {cat.children
+            .sort((a, b) => a.order - b.order)
+            .map((child) => renderCategory(child, depth + 1))}
+        </div>
+      )}
+    </div>
+  );
+
+  const totalCats = flatCats.length;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <p className="text-muted-foreground">
+          {totalCats} categor{totalCats !== 1 ? "ies" : "y"} ·{" "}
+          {tree.length} top-level
+        </p>
+        <Button
+          onClick={() => {
+            setEditingCat(null);
+            setDialogOpen(true);
+          }}
+          className="rounded-sm"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Category
+        </Button>
+      </div>
+
+      <div className="border border-border rounded-sm overflow-hidden">
+        <div className="bg-secondary/30 px-3 py-2 text-[10px] tracking-wide-luxe uppercase text-muted-foreground border-b border-border">
+          Category Tree (click ▸ to expand)
+        </div>
+        {tree.length === 0 ? (
+          <div className="text-center py-12">
+            <FolderTree className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="font-medium">No categories yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Create your first category to organize products.
+            </p>
+          </div>
+        ) : (
+          tree
+            .sort((a, b) => a.order - b.order)
+            .map((cat) => renderCategory(cat))
+        )}
+      </div>
+
+      <CategoryDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        category={editingCat}
+        allCategories={flatCats}
+        onSaved={refresh}
+      />
+    </div>
+  );
+}
+
+function CategoryDialog({
+  open,
+  onOpenChange,
+  category,
+  allCategories,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  category: Category | null;
+  allCategories: Category[];
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      if (category) {
+        setForm({
+          name: category.name,
+          slug: category.slug,
+          parentId: category.parentId || "",
+          icon: category.icon || "",
+          image: category.image || "",
+          description: category.description || "",
+          isActive: category.isActive,
+        });
+      } else {
+        setForm({
+          name: "",
+          slug: "",
+          parentId: "",
+          icon: "",
+          image: "",
+          description: "",
+          isActive: true,
+        });
+      }
+    }
+  }, [open, category]);
+
+  // Build parent options — exclude self and descendants to prevent cycles
+  const getDescendantIds = (id: string): string[] => {
+    const direct = allCategories.filter((c) => c.parentId === id);
+    return [id, ...direct.flatMap((c) => getDescendantIds(c.id))];
+  };
+  const excludedIds = category ? new Set(getDescendantIds(category.id)) : new Set();
+  const parentOptions = allCategories.filter((c) => !excludedIds.has(c.id));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        parentId: form.parentId || null,
+        icon: form.icon || null,
+        image: form.image || null,
+      };
+      const url = category
+        ? `/api/admin/categories/${category.id}`
+        : "/api/admin/categories";
+      const method = category ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save");
+      }
+      toast.success(category ? "Category updated" : "Category created");
+      onOpenChange(false);
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {category ? "Edit Category" : "Create New Category"}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs mb-1.5 block">Name *</Label>
+              <Input
+                required
+                value={form.name}
+                onChange={(e) => {
+                  const newSlug =
+                    !category
+                      ? e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]+/g, "-")
+                          .replace(/^-|-$/g, "")
+                      : form.slug;
+                  setForm({ ...form, name: e.target.value, slug: newSlug });
+                }}
+                className="rounded-sm"
+                placeholder="e.g. T-Shirts"
+              />
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Slug (URL)</Label>
+              <Input
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                className="rounded-sm font-mono text-xs"
+                placeholder="auto-generated"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs mb-1.5 block">Parent Category</Label>
+            <Select
+              value={form.parentId || "none"}
+              onValueChange={(v) =>
+                setForm({ ...form, parentId: v === "none" ? "" : v })
+              }
+            >
+              <SelectTrigger className="rounded-sm">
+                <SelectValue placeholder="Top-level (no parent)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Top-level (no parent) —</SelectItem>
+                {parentOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} <span className="text-muted-foreground">/{c.slug}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Selecting a parent makes this a subcategory (e.g. T-Shirts under Men › Tops)
+            </p>
+          </div>
+
+          <div>
+            <Label className="text-xs mb-1.5 block">Image URL (optional)</Label>
+            <Input
+              value={form.image}
+              onChange={(e) => setForm({ ...form, image: e.target.value })}
+              className="rounded-sm"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <Label className="text-xs mb-1.5 block">Description (optional)</Label>
+            <Input
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              className="rounded-sm"
+              placeholder="Brief description for SEO + nav"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(e) =>
+                setForm({ ...form, isActive: e.target.checked })
+              }
+              className="rounded"
+            />
+            <span className="text-sm">Active (visible on storefront)</span>
+          </label>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="rounded-sm flex-1"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>{category ? "Save Changes" : "Create Category"}</>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="rounded-sm"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { SlidersHorizontal, X, Check } from "lucide-react";
-import { products, categories, sortOptions } from "@/lib/data";
+import { SlidersHorizontal, X, Check, ChevronRight, Loader2, Home } from "lucide-react";
+import { products as localProducts, sortOptions } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -21,16 +21,95 @@ import { cn } from "@/lib/utils";
 
 const allSizes = ["XS", "S", "M", "L", "XL", "XXL", "ONE SIZE"];
 const allColors = Array.from(
-  new Set(products.flatMap((p) => p.colors.map((c) => c.name)))
+  new Set(localProducts.flatMap((p) => p.colors.map((c) => c.name)))
 ).slice(0, 12);
 
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  children: Category[];
+};
+
 export function ShopView() {
-  const { selectedCategory, setCategory } = useStore();
+  const { selectedCategory, setCategory, setView } = useStore();
   const [sortBy, setSortBy] = useState<string>("featured");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1500]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Server-side data
+  const [apiProducts, setApiProducts] = useState<any[] | null>(null);
+  const [categoryTree, setCategoryTree] = useState<Category[]>([]);
+  const [crumbs, setCrumbs] = useState<Category[]>([]); // breadcrumb path
+  const [activeSubs, setActiveSubs] = useState<Category[]>([]); // siblings at sub level
+
+  // Fetch category tree on mount
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => setCategoryTree(data.tree || []))
+      .catch(() => {});
+  }, []);
+
+  // Fetch products from API whenever filters change
+  useEffect(() => {
+    Promise.resolve().then(() => setApiProducts(null)); // show skeleton
+    const params = new URLSearchParams();
+    if (selectedCategory && selectedCategory !== "all") {
+      params.set("categorySlug", selectedCategory);
+    }
+    params.set("sort", sortBy);
+    if (priceRange[0] > 0) params.set("minPrice", String(priceRange[0]));
+    if (priceRange[1] < 1500) params.set("maxPrice", String(priceRange[1]));
+    if (selectedSizes.length > 0) params.set("sizes", selectedSizes.join(","));
+    if (selectedColors.length > 0)
+      params.set("colors", selectedColors.join(","));
+
+    fetch(`/api/products?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data) => setApiProducts(data.products || []))
+      .catch(() => setApiProducts([]));
+  }, [selectedCategory, sortBy, priceRange, selectedSizes, selectedColors]);
+
+  // Compute breadcrumb path for selectedCategory
+  useEffect(() => {
+    if (!selectedCategory || selectedCategory === "all") {
+      Promise.resolve().then(() => {
+        setCrumbs([]);
+        setActiveSubs([]);
+      });
+      return;
+    }
+    // Walk the tree to find the path
+    const path: Category[] = [];
+    let activeSubs: Category[] = [];
+    const walk = (cats: Category[], current: Category[]): boolean => {
+      for (const c of cats) {
+        const newPath = [...current, c];
+        if (c.slug === selectedCategory) {
+          path.push(...newPath);
+          // Sub-siblings: if depth 1, siblings are top-level; if depth 2+, siblings are parent's children
+          if (newPath.length >= 2) {
+            const parent = newPath[newPath.length - 2];
+            activeSubs = parent.children;
+          } else {
+            activeSubs = c.children;
+          }
+          return true;
+        }
+        if (walk(c.children, newPath)) return true;
+      }
+      return false;
+    };
+    walk(categoryTree, []);
+    Promise.resolve().then(() => {
+      setCrumbs(path);
+      setActiveSubs(activeSubs);
+    });
+  }, [selectedCategory, categoryTree]);
 
   const toggleSize = (size: string) =>
     setSelectedSizes((prev) =>
@@ -48,45 +127,15 @@ export function ShopView() {
     setPriceRange([0, 1500]);
   };
 
-  const filtered = useMemo(() => {
-    let result = [...products];
-
-    if (selectedCategory !== "All") {
-      result = result.filter((p) => p.category === selectedCategory);
-    }
-    if (selectedSizes.length > 0) {
-      result = result.filter((p) =>
-        p.sizes.some((s) => selectedSizes.includes(s))
-      );
-    }
-    if (selectedColors.length > 0) {
-      result = result.filter((p) =>
-        p.colors.some((c) => selectedColors.includes(c.name))
-      );
-    }
-    result = result.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-    );
-
-    switch (sortBy) {
-      case "price-asc":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case "newest":
-        result.sort((a, b) =>
-          (b.badge === "New" ? 1 : 0) - (a.badge === "New" ? 1 : 0)
-        );
-        break;
-    }
-
-    return result;
-  }, [selectedCategory, selectedSizes, selectedColors, priceRange, sortBy]);
+  // Display name for the current category
+  const currentCatName =
+    crumbs.length > 0 ? crumbs[crumbs.length - 1].name : "All Pieces";
+  const currentCatDescription =
+    crumbs.length > 0 && crumbs[crumbs.length - 1].description
+      ? crumbs[crumbs.length - 1].description
+      : selectedCategory === "all" || !selectedCategory
+      ? "Browse our full collection of handcrafted premium apparel and accessories."
+      : `Discover our ${currentCatName.toLowerCase()} collection — each piece handcrafted by master artisans in Europe.`;
 
   const renderFilters = () => (
     <div className="space-y-8">
@@ -113,7 +162,10 @@ export function ShopView() {
           />
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}{priceRange[1] === 1500 ? "+" : ""}</span>
+            <span>
+              ${priceRange[1]}
+              {priceRange[1] === 1500 ? "+" : ""}
+            </span>
           </div>
         </div>
       </div>
@@ -148,7 +200,7 @@ export function ShopView() {
         </Label>
         <div className="flex flex-wrap gap-2">
           {allColors.map((color) => {
-            const product = products.find((p) =>
+            const product = localProducts.find((p) =>
               p.colors.some((c) => c.name === color)
             );
             const colorObj = product?.colors.find((c) => c.name === color);
@@ -179,43 +231,115 @@ export function ShopView() {
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-10 lg:py-14">
+      {/* Breadcrumbs */}
+      <motion.nav
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground mb-6 flex-wrap"
+      >
+        <button
+          onClick={() => {
+            setCategory("all");
+            setView("home");
+          }}
+          className="hover:text-accent inline-flex items-center gap-1"
+        >
+          <Home className="h-3 w-3" />
+          Home
+        </button>
+        <ChevronRight className="h-3 w-3" />
+        <button
+          onClick={() => setCategory("all")}
+          className={cn(
+            "hover:text-accent",
+            (!selectedCategory || selectedCategory === "all") &&
+              "text-foreground font-medium"
+          )}
+        >
+          Shop
+        </button>
+        {crumbs.map((c, i) => (
+          <div key={c.id} className="flex items-center gap-1.5">
+            <ChevronRight className="h-3 w-3" />
+            <button
+              onClick={() => setCategory(c.slug)}
+              className={cn(
+                "hover:text-accent",
+                i === crumbs.length - 1 && "text-foreground font-medium"
+              )}
+            >
+              {c.name}
+            </button>
+          </div>
+        ))}
+      </motion.nav>
+
       {/* Page header */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
         className="mb-10 lg:mb-14"
       >
         <p className="text-[11px] tracking-luxe uppercase text-accent mb-3">
           The Collection
         </p>
-        <h1 className="font-serif text-4xl lg:text-5xl">
-          {selectedCategory === "All" ? "All Pieces" : selectedCategory}
-        </h1>
+        <h1 className="font-serif text-4xl lg:text-5xl">{currentCatName}</h1>
         <p className="text-muted-foreground mt-3 max-w-2xl">
-          {selectedCategory === "All"
-            ? "Browse our full collection of handcrafted premium apparel and accessories."
-            : `Discover our ${selectedCategory.toLowerCase()} collection — each piece handcrafted by master artisans in Europe.`}
+          {currentCatDescription}
         </p>
       </motion.div>
 
-      {/* Category pills */}
-      <div className="flex items-center gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
-        {categories.map((cat) => (
+      {/* Subcategory pills (if applicable) */}
+      {activeSubs.length > 0 && (
+        <div className="flex items-center gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
           <button
-            key={cat}
-            onClick={() => setCategory(cat)}
+            onClick={() => {
+              // Go to parent
+              if (crumbs.length >= 2) {
+                setCategory(crumbs[crumbs.length - 2].slug);
+              } else {
+                setCategory("all");
+              }
+            }}
             className={cn(
-              "px-5 h-10 text-sm tracking-wide whitespace-nowrap border transition-all rounded-full",
-              selectedCategory === cat
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:border-primary text-foreground"
+              "px-4 h-10 text-sm tracking-wide whitespace-nowrap border transition-all rounded-full",
+              "border-border hover:border-primary text-foreground"
             )}
           >
-            {cat}
+            All
           </button>
-        ))}
-      </div>
+          {activeSubs.map((sub) => (
+            <button
+              key={sub.id}
+              onClick={() => setCategory(sub.slug)}
+              className={cn(
+                "px-4 h-10 text-sm tracking-wide whitespace-nowrap border transition-all rounded-full",
+                selectedCategory === sub.slug
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border hover:border-primary text-foreground"
+              )}
+            >
+              {sub.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Top-level category pills (when no category selected) */}
+      {(!selectedCategory || selectedCategory === "all") &&
+        categoryTree.length > 0 && (
+          <div className="flex items-center gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
+            {categoryTree.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setCategory(cat.slug)}
+                className="px-4 h-10 text-sm tracking-wide whitespace-nowrap border border-border hover:border-primary text-foreground transition-all rounded-full"
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
@@ -229,7 +353,7 @@ export function ShopView() {
               >
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Filters
-                {(selectedSizes.length + selectedColors.length) > 0 && (
+                {selectedSizes.length + selectedColors.length > 0 && (
                   <span className="ml-2 bg-accent text-accent-foreground text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
                     {selectedSizes.length + selectedColors.length}
                   </span>
@@ -242,12 +366,22 @@ export function ShopView() {
           </Sheet>
 
           <p className="text-sm text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? "piece" : "pieces"}
+            {apiProducts === null ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Loading...
+              </span>
+            ) : (
+              <>
+                {apiProducts.length}{" "}
+                {apiProducts.length === 1 ? "piece" : "pieces"}
+              </>
+            )}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {(selectedSizes.length > 0 || selectedColors.length > 0) && (
+          {selectedSizes.length + selectedColors.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -281,7 +415,9 @@ export function ShopView() {
 
         {/* Products grid */}
         <div>
-          {filtered.length === 0 ? (
+          {apiProducts === null ? (
+            <ShopSkeleton />
+          ) : apiProducts.length === 0 ? (
             <div className="text-center py-20">
               <p className="font-serif text-2xl mb-3">No pieces found</p>
               <p className="text-muted-foreground mb-6">
@@ -301,7 +437,7 @@ export function ShopView() {
               }}
               className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-6"
             >
-              {filtered.map((p) => (
+              {apiProducts.map((p: any) => (
                 <motion.div
                   key={p.id}
                   variants={{
@@ -316,6 +452,21 @@ export function ShopView() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ShopSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-6">
+      {Array.from({ length: 9 }).map((_, i) => (
+        <div key={i}>
+          <div className="aspect-[3/4] rounded-sm shimmer" />
+          <div className="h-3 w-1/2 mt-3 rounded shimmer" />
+          <div className="h-4 w-3/4 mt-2 rounded shimmer" />
+          <div className="h-3 w-1/4 mt-2 rounded shimmer" />
+        </div>
+      ))}
     </div>
   );
 }

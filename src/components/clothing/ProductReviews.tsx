@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Star, ThumbsUp, Loader2, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Star, ThumbsUp, Loader2, MessageSquare, CheckCircle2, Camera, X } from "lucide-react";
 import { useProductReviews, useUserData } from "@/lib/use-user-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,17 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type Review = {
+  id: string;
+  authorName: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  verified: boolean;
+  createdAt: string;
+  images?: string[] | null;
+};
+
 export function ProductReviews({ slug }: { slug: string }) {
   const { reviews, loading, addReview } = useProductReviews(slug);
   const { isAuthenticated } = useUserData();
@@ -28,6 +39,8 @@ export function ProductReviews({ slug }: { slug: string }) {
     title: "",
     body: "",
   });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [hoverRating, setHoverRating] = useState(0);
 
   const avgRating = reviews.length
@@ -54,14 +67,32 @@ export function ProductReviews({ slug }: { slug: string }) {
         rating: form.rating,
         title: form.title || undefined,
         body: form.body,
-      });
+        images: imageUrls.length > 0 ? imageUrls : undefined,
+      } as any);
       setForm({ rating: 5, title: "", body: "" });
+      setImageUrls([]);
+      setImageUrlInput("");
       setDialogOpen(false);
     } catch (e: any) {
       toast.error(e.message || "Failed to submit review");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const addImage = () => {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (!url.match(/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)/i)) {
+      toast.error("Please enter a valid image URL (jpg, png, webp)");
+      return;
+    }
+    if (imageUrls.length >= 5) {
+      toast.error("Maximum 5 photos per review");
+      return;
+    }
+    setImageUrls([...imageUrls, url]);
+    setImageUrlInput("");
   };
 
   if (loading) {
@@ -180,6 +211,63 @@ export function ProductReviews({ slug }: { slug: string }) {
                     required
                   />
                 </div>
+
+                {/* Customer photos */}
+                <div>
+                  <Label className="text-xs mb-1.5 block flex items-center gap-1.5">
+                    <Camera className="h-3.5 w-3.5" />
+                    Add Photos (optional — {imageUrls.length}/5)
+                  </Label>
+                  {imageUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {imageUrls.map((url, i) => (
+                        <div key={i} className="relative group">
+                          <img
+                            src={url}
+                            alt={`Customer photo ${i + 1}`}
+                            className="w-16 h-16 object-cover rounded-sm border border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setImageUrls(imageUrls.filter((_, idx) => idx !== i))
+                            }
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Remove photo"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {imageUrls.length < 5 && (
+                    <div className="flex gap-2">
+                      <Input
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        placeholder="https://example.com/photo.jpg"
+                        className="rounded-sm text-xs"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addImage();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addImage}
+                        className="rounded-sm"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <Button
                   type="submit"
                   disabled={submitting}
@@ -254,6 +342,27 @@ export function ProductReviews({ slug }: { slug: string }) {
                 <p className="text-muted-foreground leading-relaxed mt-1">
                   {review.body}
                 </p>
+                {/* Customer photos */}
+                {(() => {
+                  const photos = (review as any).images
+                    ? typeof (review as any).images === "string"
+                      ? JSON.parse((review as any).images)
+                      : (review as any).images
+                    : null;
+                  if (!photos || photos.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {photos.map((photo: string, i: number) => (
+                        <img
+                          key={i}
+                          src={photo}
+                          alt={`${review.authorName}'s photo ${i + 1}`}
+                          className="w-20 h-20 object-cover rounded-sm border border-border hover:scale-105 transition-transform cursor-pointer"
+                        />
+                      ))}
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center gap-3 mt-3">
                   <button className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1 transition-colors">
                     <ThumbsUp className="h-3 w-3" />

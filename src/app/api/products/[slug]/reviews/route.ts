@@ -37,7 +37,7 @@ export async function POST(
   }
 
   const body = await req.json();
-  const { rating, title, body: reviewBody } = body;
+  const { rating, title, body: reviewBody, images } = body;
 
   if (!rating || rating < 1 || rating > 5) {
     return NextResponse.json(
@@ -71,6 +71,7 @@ export async function POST(
       rating: parseInt(rating),
       title: title || null,
       body: reviewBody,
+      images: images && images.length > 0 ? JSON.stringify(images) : null,
       verified: false,
     },
   });

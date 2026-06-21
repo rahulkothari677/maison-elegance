@@ -13,9 +13,29 @@ function parseProduct(p: any) {
   };
 }
 
+// Collect all descendant category IDs (including the given one)
+async function collectCategoryIds(slug: string): Promise<string[] | null> {
+  const cat = await db.category.findUnique({ where: { slug } });
+  if (!cat) return null;
+  const ids = [cat.id];
+  // BFS through children
+  let queue = [cat.id];
+  while (queue.length > 0) {
+    const children = await db.category.findMany({
+      where: { parentId: { in: queue } },
+      select: { id: true },
+    });
+    const childIds = children.map((c) => c.id);
+    ids.push(...childIds);
+    queue = childIds;
+  }
+  return ids;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const category = searchParams.get("category");
+  const category = searchParams.get("category"); // legacy flat name
+  const categorySlug = searchParams.get("categorySlug"); // new: slug-based path
   const sort = searchParams.get("sort") || "featured";
   const minPrice = searchParams.get("minPrice");
   const maxPrice = searchParams.get("maxPrice");
@@ -23,9 +43,18 @@ export async function GET(req: NextRequest) {
   const colors = searchParams.get("colors");
 
   let where: any = {};
-  if (category && category !== "All") {
+
+  // New slug-based filtering (with descendants)
+  if (categorySlug && categorySlug !== "all") {
+    const ids = await collectCategoryIds(categorySlug);
+    if (ids && ids.length > 0) {
+      where.categoryId = { in: ids };
+    }
+  } else if (category && category !== "All") {
+    // Legacy fallback: filter by flat category string
     where.category = category;
   }
+
   if (minPrice || maxPrice) {
     where.price = {};
     if (minPrice) where.price.gte = parseInt(minPrice);
@@ -38,7 +67,10 @@ export async function GET(req: NextRequest) {
   else if (sort === "rating") orderBy = { rating: "desc" };
   else if (sort === "newest") orderBy = { createdAt: "desc" };
 
-  const products = await db.product.findMany({ where, orderBy });
+  const products = await db.product.findMany({
+    where,
+    orderBy,
+  });
 
   // Filter by sizes/colors in memory (sqlite JSON isn't queryable)
   let filtered = products;

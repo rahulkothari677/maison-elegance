@@ -13,6 +13,8 @@ import {
   Loader2,
   MapPin,
   Plus,
+  Award,
+  RefreshCw,
 } from "lucide-react";
 import { useStore, cartSubtotal } from "@/lib/store";
 import { useUserData } from "@/lib/use-user-data";
@@ -495,6 +497,26 @@ export function CheckoutView() {
                 >
                   Place Order · ${total.toLocaleString()}
                 </Button>
+              </div>
+
+              {/* Trust badges */}
+              <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                {[
+                  { icon: ShieldCheck, label: "256-bit SSL\nSecure" },
+                  { icon: Award, label: "Authenticity\nGuaranteed" },
+                  { icon: RefreshCw, label: "30-Day\nReturns" },
+                  { icon: Truck, label: "Free Shipping\nOver $250" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex flex-col items-center gap-1.5 p-2"
+                  >
+                    <item.icon className="h-5 w-5 text-accent" />
+                    <span className="text-[11px] text-muted-foreground whitespace-pre-line leading-tight">
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}

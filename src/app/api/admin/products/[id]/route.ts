@@ -35,6 +35,7 @@ export async function PATCH(
   if (body.name !== undefined) data.name = body.name;
   if (body.category !== undefined) data.category = body.category;
   if (body.subcategory !== undefined) data.subcategory = body.subcategory;
+  if (body.categoryId !== undefined) data.categoryId = body.categoryId || null;
   if (body.price !== undefined) data.price = parseInt(body.price);
   if (body.compareAtPrice !== undefined)
     data.compareAtPrice = body.compareAtPrice
