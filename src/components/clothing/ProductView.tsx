@@ -21,6 +21,7 @@ import {
   Search,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useCurrency } from "@/lib/use-currency";
 import { getProductById, products } from "@/lib/data";
 import type { SizeOption } from "@/lib/data";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export function ProductView() {
     setView,
     openProduct,
   } = useStore();
+  const { convert, currency } = useCurrency();
 
   const product = selectedProductId ? getProductById(selectedProductId) : null;
   const [selectedImage, setSelectedImage] = useState(0);
@@ -194,18 +196,18 @@ export function ProductView() {
 
           <div className="flex items-baseline gap-3">
             <span className="text-2xl font-medium">
-              ${product.price.toLocaleString()}{" "}
+              {convert(product.price)}{" "}
               <span className="text-base text-muted-foreground font-normal">
-                {product.currency}
+                {currency.code}
               </span>
             </span>
             {product.compareAtPrice && (
               <>
                 <span className="text-base text-muted-foreground line-through">
-                  ${product.compareAtPrice.toLocaleString()}
+                  {convert(product.compareAtPrice)}
                 </span>
                 <Badge variant="secondary" className="bg-accent/15 text-accent border-0">
-                  Save ${(product.compareAtPrice - product.price).toLocaleString()}
+                  Save {convert(product.compareAtPrice - product.price)}
                 </Badge>
               </>
             )}
@@ -215,7 +217,7 @@ export function ProductView() {
           {product.price >= 100 && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/40 px-3 py-2 rounded-sm">
               <span className="font-medium text-foreground">
-                ${(product.price / 4).toFixed(2)} × 4 interest-free
+                {convert(product.price / 4)} × 4 interest-free
               </span>
               <span className="text-muted-foreground/60">·</span>
               <span>with</span>

@@ -17,6 +17,7 @@ import { CartDrawer } from "@/components/clothing/CartDrawer";
 import { QuickView } from "@/components/clothing/QuickView";
 import { BackToTop } from "@/components/clothing/BackToTop";
 import { ConciergeChat } from "@/components/clothing/ConciergeChat";
+import { CompareTray, CompareModal } from "@/components/clothing/CompareTray";
 import { AdminView } from "@/components/clothing/AdminView";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
@@ -66,6 +67,8 @@ export default function Home() {
       {/* Global overlays */}
       <CartDrawer />
       <QuickView />
+      <CompareTray />
+      <CompareModal />
       <BackToTop />
       <ConciergeChat />
     </div>

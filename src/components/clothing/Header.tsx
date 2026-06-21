@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { MegaMenu } from "./MegaMenu";
 import { ThemeToggle } from "./ThemeToggle";
+import { CurrencySelector } from "./CurrencySelector";
 import { AuthModal } from "./AuthModal";
 import { toast } from "sonner";
 
@@ -342,6 +343,10 @@ export function Header() {
               >
                 <Search className="h-[18px] w-[18px]" />
               </Button>
+
+              <div className="hidden sm:block">
+                <CurrencySelector compact />
+              </div>
 
               <ThemeToggle />
 

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Eye, ShoppingBag, Zap } from "lucide-react";
+import { Heart, Eye, ShoppingBag, Zap, GitCompare } from "lucide-react";
 import type { Product } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { useUserData } from "@/lib/use-user-data";
+import { useCurrency } from "@/lib/use-currency";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,20 +16,24 @@ export function ProductCard({ product }: { product: Product }) {
     wishlist: localWishlist,
     addToCart,
     setQuickViewProduct,
+    compareIds,
+    toggleCompare,
   } = useStore();
   const {
     isAuthenticated,
     wishlistProductIds,
     toggleWishlist: toggleApiWishlist,
   } = useUserData();
+  const { convert } = useCurrency();
   const [imgIdx, setImgIdx] = useState(0);
   const [hovering, setHovering] = useState(false);
   const [activeColor, setActiveColor] = useState(0);
 
-  // Use API wishlist if authed, else local fallback
   const isWishlisted = isAuthenticated
     ? wishlistProductIds.includes(product.id)
     : localWishlist.includes(product.id);
+
+  const isComparing = compareIds.includes(product.id);
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,22 +108,43 @@ export function ProductCard({ product }: { product: Product }) {
           <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
         </button>
 
-        {/* Quick view button (top-left, appears on hover) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setQuickViewProduct(product.id);
-          }}
-          aria-label="Quick view"
+        {/* Quick view + Compare buttons (top-left, appears on hover) */}
+        <div
           className={cn(
-            "absolute top-3 left-3 w-9 h-9 rounded-full backdrop-blur flex items-center justify-center transition-all",
-            "bg-background/90 text-foreground hover:bg-background",
+            "absolute top-3 left-3 flex flex-col gap-2 transition-all",
             product.badge || lowStock ? "top-14" : "top-3",
             hovering ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 lg:opacity-0"
           )}
         >
-          <Eye className="h-4 w-4" />
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setQuickViewProduct(product.id);
+            }}
+            aria-label="Quick view"
+            className="w-9 h-9 rounded-full backdrop-blur flex items-center justify-center bg-background/90 text-foreground hover:bg-background transition-colors"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isComparing && compareIds.length >= 4) {
+                return; // max 4
+              }
+              toggleCompare(product.id);
+            }}
+            aria-label={isComparing ? "Remove from compare" : "Add to compare"}
+            className={cn(
+              "w-9 h-9 rounded-full backdrop-blur flex items-center justify-center transition-colors",
+              isComparing
+                ? "bg-accent text-accent-foreground"
+                : "bg-background/90 text-foreground hover:bg-background"
+            )}
+          >
+            <GitCompare className={cn("h-4 w-4", isComparing && "scale-110")} />
+          </button>
+        </div>
 
         {/* Quick action bar */}
         <div
@@ -173,11 +199,11 @@ export function ProductCard({ product }: { product: Product }) {
         </h3>
         <div className="flex items-center gap-2 pt-0.5">
           <span className="text-sm font-medium">
-            ${product.price.toLocaleString()}
+            {convert(product.price)}
           </span>
           {product.compareAtPrice && (
             <span className="text-xs text-muted-foreground line-through">
-              ${product.compareAtPrice.toLocaleString()}
+              {convert(product.compareAtPrice)}
             </span>
           )}
         </div>

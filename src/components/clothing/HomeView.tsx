@@ -39,6 +39,22 @@ export function HomeView() {
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .slice(0, 6);
 
+  // Personalized recommendations — based on categories the user has browsed
+  // Pick items from the same categories as recently viewed, excluding already-viewed
+  const browsedCategories = new Set(
+    recentlyViewed.map((p) => p.category)
+  );
+  const recommendations = recentlyViewed.length > 0
+    ? products
+        .filter(
+          (p) =>
+            browsedCategories.has(p.category) &&
+            !lastViewedProductIds.includes(p.id)
+        )
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 4)
+    : [];
+
   return (
     <motion.div initial="hidden" animate="show" variants={stagger}>
       {/* HERO */}
@@ -510,6 +526,52 @@ export function HomeView() {
           </motion.div>
         </div>
       </section>
+
+      {/* PERSONALIZED RECOMMENDATIONS */}
+      {recommendations.length > 0 && (
+        <section className="border-t border-border bg-secondary/20">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-16 lg:py-20">
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              className="flex items-end justify-between mb-10"
+            >
+              <div>
+                <p className="text-[11px] tracking-luxe uppercase text-accent mb-2">
+                  Curated for You
+                </p>
+                <h2 className="font-serif text-3xl lg:text-4xl">
+                  Based on Your Browsing
+                </h2>
+                <p className="text-sm text-muted-foreground mt-2 max-w-md">
+                  Pieces that match your recent interests — handpicked from
+                  categories you've explored.
+                </p>
+              </div>
+              <Button
+                variant="link"
+                onClick={() => setView("shop")}
+                className="text-sm tracking-wide-luxe uppercase hover:text-accent hidden sm:flex"
+              >
+                Browse All
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
+            <motion.div
+              variants={stagger}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6"
+            >
+              {recommendations.map((p) => (
+                <motion.div key={p.id} variants={fadeUp}>
+                  <ProductCard product={p} />
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* RECENTLY VIEWED */}
       {recentlyViewed.length > 0 && (

@@ -106,6 +106,20 @@ export type AppState = {
   lastViewedProductIds: string[];
   lastOrderId: string | null;
 
+  // Compare tray (up to 4 products)
+  compareIds: string[];
+  toggleCompare: (productId: string) => void;
+  clearCompare: () => void;
+  compareOpen: boolean;
+  setCompareOpen: (open: boolean) => void;
+
+  // Wishlist folders
+  wishlistFolders: Record<string, { name: string; productIds: string[] }>;
+  addToFolder: (folderId: string, productId: string) => void;
+  removeFromFolder: (folderId: string, productId: string) => void;
+  createFolder: (name: string) => string;
+  deleteFolder: (folderId: string) => void;
+
   // Cart drawer (slide-out)
   cartDrawerOpen: boolean;
   setCartDrawerOpen: (open: boolean) => void;
@@ -321,6 +335,73 @@ export const useStore = create<AppState>()(
       lastViewedProductIds: [],
       lastOrderId: null,
 
+      // Compare tray (up to 4 products)
+      compareIds: [],
+      toggleCompare: (productId) =>
+        set((state) => {
+          if (state.compareIds.includes(productId)) {
+            return {
+              compareIds: state.compareIds.filter((id) => id !== productId),
+            };
+          }
+          if (state.compareIds.length >= 4) {
+            return state; // max 4
+          }
+          return { compareIds: [...state.compareIds, productId] };
+        }),
+      clearCompare: () => set({ compareIds: [] }),
+      compareOpen: false,
+      setCompareOpen: (open) => set({ compareOpen: open }),
+
+      // Wishlist folders — local only (authed users use API wishlist)
+      wishlistFolders: {
+        "favs": { name: "Favorites", productIds: [] },
+      },
+      addToFolder: (folderId, productId) =>
+        set((state) => {
+          const folder = state.wishlistFolders[folderId];
+          if (!folder) return state;
+          if (folder.productIds.includes(productId)) return state;
+          return {
+            wishlistFolders: {
+              ...state.wishlistFolders,
+              [folderId]: {
+                ...folder,
+                productIds: [...folder.productIds, productId],
+              },
+            },
+          };
+        }),
+      removeFromFolder: (folderId, productId) =>
+        set((state) => {
+          const folder = state.wishlistFolders[folderId];
+          if (!folder) return state;
+          return {
+            wishlistFolders: {
+              ...state.wishlistFolders,
+              [folderId]: {
+                ...folder,
+                productIds: folder.productIds.filter((id) => id !== productId),
+              },
+            },
+          };
+        }),
+      createFolder: (name) => {
+        const id = `folder-${Date.now()}`;
+        set((state) => ({
+          wishlistFolders: {
+            ...state.wishlistFolders,
+            [id]: { name, productIds: [] },
+          },
+        }));
+        return id;
+      },
+      deleteFolder: (folderId) =>
+        set((state) => {
+          const { [folderId]: _, ...rest } = state.wishlistFolders;
+          return { wishlistFolders: rest };
+        }),
+
       cartDrawerOpen: false,
       setCartDrawerOpen: (open) => set({ cartDrawerOpen: open }),
 
@@ -503,6 +584,8 @@ export const useStore = create<AppState>()(
         wishlist: state.wishlist,
         notificationPrefs: state.notificationPrefs,
         lastViewedProductIds: state.lastViewedProductIds,
+        compareIds: state.compareIds,
+        wishlistFolders: state.wishlistFolders,
       }),
     }
   )
