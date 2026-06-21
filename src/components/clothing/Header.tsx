@@ -12,6 +12,7 @@ import {
   ChevronRight,
   LogOut,
   Crown,
+  Home,
 } from "lucide-react";
 import { useStore, cartCount } from "@/lib/store";
 import { products, categories } from "@/lib/data";
@@ -165,6 +166,22 @@ export function Header() {
                       </Button>
                     </div>
                     <nav className="flex-1 p-6 space-y-1">
+                      <button
+                        onClick={() => {
+                          useStore.getState().setView("home");
+                          setMobileOpen(false);
+                          if (typeof window !== "undefined") {
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }
+                        }}
+                        className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                      >
+                        <span className="text-lg font-serif inline-flex items-center gap-2">
+                          <Home className="h-4 w-4" />
+                          Home
+                        </span>
+                        <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </button>
                       {categories.map((cat) => (
                         <button
                           key={cat}

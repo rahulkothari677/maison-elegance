@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Home } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { products, categories } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -110,13 +110,19 @@ export function MegaMenu() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleEnter = (cat: string) => {
+  // Called when hovering a category button — opens the mega menu for that cat
+  const handleItemEnter = (cat: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setActiveCategory(cat);
   };
 
+  // Called when hovering the popup itself — just cancel any pending close
+  const handlePopupEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  };
+
   const handleLeave = () => {
-    timeoutRef.current = setTimeout(() => setActiveCategory(null), 150);
+    timeoutRef.current = setTimeout(() => setActiveCategory(null), 200);
   };
 
   const goToCategory = (cat: string) => {
@@ -136,16 +142,34 @@ export function MegaMenu() {
 
   return (
     <nav
-      className="hidden lg:flex items-center gap-8 relative"
+      className="hidden lg:flex items-center gap-6 relative"
       onMouseLeave={handleLeave}
     >
+      {/* Home button — always visible, easy way back to home */}
+      <button
+        onClick={() => {
+          useStore.getState().setView("home");
+          if (typeof window !== "undefined") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }}
+        className={cn(
+          "relative text-[12px] tracking-wide-luxe uppercase py-1 transition-colors hover:text-accent inline-flex items-center gap-1.5",
+          useStore.getState().view === "home" && "text-accent"
+        )}
+        aria-label="Home"
+      >
+        <Home className="h-[14px] w-[14px]" />
+        <span className="hidden xl:inline">Home</span>
+      </button>
+
       {navCategories.map((cat) => {
         const data = megaMenuData[cat];
         const isActive = activeCategory === cat;
         return (
           <div
             key={cat}
-            onMouseEnter={() => handleEnter(cat)}
+            onMouseEnter={() => handleItemEnter(cat)}
             className="relative"
           >
             <button
@@ -174,11 +198,14 @@ export function MegaMenu() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            onMouseEnter={handleEnter}
+            onMouseEnter={handlePopupEnter}
             onMouseLeave={handleLeave}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[820px] bg-background border border-border shadow-2xl rounded-sm overflow-hidden z-50"
+            // Anchor to left edge of nav (no left cutoff), with pt-2 bridge so
+            // the hover area touches the nav row (no gap that closes the menu)
+            className="absolute top-full left-0 pt-2 z-50"
           >
-            <div className="grid grid-cols-[1fr_1fr_320px] gap-0">
+            <div className="w-[820px] max-w-[calc(100vw-2rem)] bg-background border border-border shadow-2xl rounded-sm overflow-hidden">
+              <div className="grid grid-cols-[1fr_1fr_320px] gap-0">
               {/* Left column */}
               <div className="p-6 border-r border-border">
                 <p className="text-[10px] tracking-luxe uppercase text-accent mb-4">
@@ -280,6 +307,7 @@ export function MegaMenu() {
                   </div>
                 </button>
               )}
+              </div>
             </div>
           </motion.div>
         )}
