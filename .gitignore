@@ -50,6 +50,10 @@ server.log
 # Database (keep schema, ignore the actual db file for redistribution)
 db/*.db
 db/*.db-journal
+*.db
+*.db-journal
+prisma/*.db
+prisma/*.db-journal
 
 # Socket service logs
 scripts/order-tracker.log
