@@ -74,16 +74,45 @@ export function Header() {
   const isAuthenticated = status === "authenticated" && !!session?.user;
   const userName = (session?.user as any)?.name || "Account";
 
-  const searchResults = searchQuery.trim()
+  const lowerQuery = searchQuery.toLowerCase().trim();
+  const searchResults = lowerQuery
     ? products
         .filter(
           (p) =>
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.subcategory.toLowerCase().includes(searchQuery.toLowerCase())
+            p.name.toLowerCase().includes(lowerQuery) ||
+            p.category.toLowerCase().includes(lowerQuery) ||
+            p.subcategory.toLowerCase().includes(lowerQuery)
         )
         .slice(0, 6)
     : [];
+
+  // Autocomplete: category suggestions from the tree (already fetched for mobile menu)
+  const categorySuggestions = lowerQuery
+    ? (function () {
+        const matches: { name: string; slug: string; path: string }[] = [];
+        const walk = (cats: any[], prefix: string) => {
+          for (const c of cats || []) {
+            const path = prefix + c.name;
+            if (c.name.toLowerCase().includes(lowerQuery)) {
+              matches.push({ name: c.name, slug: c.slug, path });
+            }
+            walk(c.children || [], path + " › ");
+          }
+        };
+        walk(mobileCategoryTree, "");
+        return matches.slice(0, 4);
+      })()
+    : [];
+
+  // Trending searches when no query
+  const trendingSearches = [
+    "Cashmere",
+    "Wool Coat",
+    "Leather Bag",
+    "Linen Shirt",
+    "Boots",
+    "Silk Dress",
+  ];
 
   const handleNav = (category: string, targetView: "shop" | "home" = "shop") => {
     setCategory(category);
@@ -464,54 +493,121 @@ export function Header() {
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
-                {searchResults.length > 0 && (
-                  <div className="mt-6 space-y-2">
-                    {searchResults.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          openProduct(p.id);
-                          setSearchOpen(false);
-                          setSearchQuery("");
-                        }}
-                        className="w-full flex items-center gap-4 p-2 hover:bg-muted rounded-lg transition-colors text-left"
-                      >
-                        <img
-                          src={p.images[0]}
-                          alt={p.name}
-                          className="w-14 h-14 object-cover rounded"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{p.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {p.category} · ${p.price}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    ))}
+                {/* Category suggestions (autocomplete) */}
+                {categorySuggestions.length > 0 && (
+                  <div className="mt-6">
+                    <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground mb-3">
+                      Categories
+                    </p>
+                    <div className="space-y-1">
+                      {categorySuggestions.map((c) => (
+                        <button
+                          key={c.slug}
+                          onClick={() => {
+                            setCategory(c.slug);
+                            setView("shop");
+                            setSearchOpen(false);
+                            setSearchQuery("");
+                            if (typeof window !== "undefined") {
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 p-2 hover:bg-muted rounded-lg transition-colors text-left"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                            <Search className="h-4 w-4 text-accent" />
+                          </div>
+                          <span className="text-sm font-medium">{c.path}</span>
+                          <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {searchQuery && searchResults.length === 0 && (
-                  <p className="mt-6 text-muted-foreground text-center">
-                    No results for &ldquo;{searchQuery}&rdquo;
-                  </p>
-                )}
-                {!searchQuery && (
-                  <div className="mt-6 flex flex-wrap gap-2 items-center">
-                    <span className="text-sm text-muted-foreground mr-2">
-                      Popular:
-                    </span>
-                    {["Cashmere", "Wool Coat", "Leather Bag", "Linen Shirt"].map(
-                      (term) => (
+
+                {/* Product results */}
+                {searchResults.length > 0 && (
+                  <div className="mt-6">
+                    <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground mb-3">
+                      Products
+                    </p>
+                    <div className="space-y-2">
+                      {searchResults.map((p) => (
                         <button
-                          key={term}
-                          onClick={() => setSearchQuery(term)}
-                          className="text-sm px-3 py-1 rounded-full bg-muted hover:bg-muted/70 transition-colors"
+                          key={p.id}
+                          onClick={() => {
+                            openProduct(p.id);
+                            setSearchOpen(false);
+                            setSearchQuery("");
+                          }}
+                          className="w-full flex items-center gap-4 p-2 hover:bg-muted rounded-lg transition-colors text-left"
                         >
-                          {term}
+                          <img
+                            src={p.images[0]}
+                            alt={p.name}
+                            className="w-14 h-14 object-cover rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{p.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {p.category} · ${p.price}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </button>
-                      )
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {searchQuery &&
+                  searchResults.length === 0 &&
+                  categorySuggestions.length === 0 && (
+                    <p className="mt-6 text-muted-foreground text-center">
+                      No results for &ldquo;{searchQuery}&rdquo;
+                    </p>
+                  )}
+                {!searchQuery && (
+                  <div className="mt-6 space-y-4">
+                    <div>
+                      <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground mb-3">
+                        Trending Searches
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {trendingSearches.map((term) => (
+                          <button
+                            key={term}
+                            onClick={() => setSearchQuery(term)}
+                            className="text-sm px-3 py-1.5 rounded-full bg-muted hover:bg-accent/15 hover:text-accent transition-colors"
+                          >
+                            {term}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {mobileCategoryTree.length > 0 && (
+                      <div>
+                        <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground mb-3">
+                          Browse by Category
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {mobileCategoryTree.map((cat) => (
+                            <button
+                              key={cat.id}
+                              onClick={() => {
+                                setCategory(cat.slug);
+                                setView("shop");
+                                setSearchOpen(false);
+                                if (typeof window !== "undefined") {
+                                  window.scrollTo({ top: 0, behavior: "smooth" });
+                                }
+                              }}
+                              className="text-left text-sm px-3 py-2 rounded-sm border border-border hover:border-accent hover:text-accent transition-colors"
+                            >
+                              {cat.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

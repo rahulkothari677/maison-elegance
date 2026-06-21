@@ -1046,6 +1046,141 @@ export function ProfileView() {
                   </div>
                 ))}
               </div>
+
+              {/* Tier comparison */}
+              <h3 className="font-serif text-xl pt-4">Compare Tiers</h3>
+              <div className="border border-border rounded-sm overflow-hidden overflow-x-auto">
+                <table className="w-full text-sm min-w-[500px]">
+                  <thead>
+                    <tr className="bg-secondary/30">
+                      <th className="text-left p-4 text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                        Benefit
+                      </th>
+                      <th className="text-center p-4 text-[10px] tracking-wide-luxe uppercase">
+                        <span className="text-gray-500">Silver</span>
+                      </th>
+                      <th
+                        className={cn(
+                          "text-center p-4 text-[10px] tracking-wide-luxe uppercase",
+                          profile.tier === "Gold" && "bg-accent/10"
+                        )}
+                      >
+                        <span className="text-amber-600 font-medium">★ Gold</span>
+                      </th>
+                      <th
+                        className={cn(
+                          "text-center p-4 text-[10px] tracking-wide-luxe uppercase",
+                          profile.tier === "Platinum" && "bg-accent/10"
+                        )}
+                      >
+                        <span className="text-purple-600 font-medium">★ Platinum</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Threshold", "$0", "$5,000", "$20,000"],
+                      ["Points per $1", "1 pt", "1.5 pts", "2 pts"],
+                      ["Free shipping", "Over $250", "Every order", "Every order + express"],
+                      ["Returns window", "30 days", "60 days", "90 days"],
+                      ["Birthday gift", "—", "✓", "✓ Premium"],
+                      ["Early access", "—", "48h", "72h"],
+                      ["Personal stylist", "—", "On request", "Dedicated"],
+                      ["Private events", "—", "—", "✓ Invitations"],
+                      ["Welcome bonus", "100 pts", "500 pts", "2,000 pts"],
+                    ].map(([benefit, silver, gold, platinum], i) => (
+                      <tr
+                        key={benefit}
+                        className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                      >
+                        <td className="p-4 text-muted-foreground">{benefit}</td>
+                        <td className="p-4 text-center text-xs">{silver}</td>
+                        <td
+                          className={cn(
+                            "p-4 text-center text-xs",
+                            profile.tier === "Gold" && "bg-accent/5 font-medium"
+                          )}
+                        >
+                          {gold}
+                        </td>
+                        <td
+                          className={cn(
+                            "p-4 text-center text-xs",
+                            profile.tier === "Platinum" && "bg-accent/5 font-medium"
+                          )}
+                        >
+                          {platinum}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Points History */}
+              <h3 className="font-serif text-xl pt-4">Points History</h3>
+              <div className="border border-border rounded-sm overflow-hidden">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-4 p-3 bg-secondary/30 text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                  <span>Activity</span>
+                  <span className="text-right w-24">Date</span>
+                  <span className="text-right w-20">Points</span>
+                </div>
+                {/* Build a synthetic history from orders + signup bonus */}
+                {(() => {
+                  const history: {
+                    activity: string;
+                    date: string;
+                    points: number;
+                    type: "earned" | "spent" | "bonus";
+                  }[] = [];
+                  // Signup bonus
+                  history.push({
+                    activity: "Welcome bonus — joined MAISON ÉLÉGANCE",
+                    date: profile.memberSince,
+                    points: 100,
+                    type: "bonus",
+                  });
+                  // From orders
+                  orders.forEach((o: any) => {
+                    history.push({
+                      activity: `Order ${o.orderNumber} · ${o.items.length} item${
+                        o.items.length !== 1 ? "s" : ""
+                      }`,
+                      date: new Date(o.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }),
+                      points: Math.floor(o.total),
+                      type: "earned",
+                    });
+                  });
+                  return history.map((h, i) => (
+                    <div
+                      key={i}
+                      className="grid grid-cols-[1fr_auto_auto] gap-4 p-3 border-t border-border items-center text-sm"
+                    >
+                      <span className="text-muted-foreground">{h.activity}</span>
+                      <span className="text-xs text-muted-foreground w-24 text-right">
+                        {h.date}
+                      </span>
+                      <span
+                        className={cn(
+                          "font-medium text-right w-20",
+                          h.type === "spent" ? "text-destructive" : "text-green-600"
+                        )}
+                      >
+                        {h.type === "spent" ? "−" : "+"}
+                        {h.points.toLocaleString()}
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Earn 1 point per $1 spent. Points never expire. Use points for
+                discounts, exclusive pieces, and private event access.
+              </p>
             </motion.div>
           )}
 

@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "./ProductCard";
 import { ProductReviews } from "./ProductReviews";
+import { SizeFinder } from "./SizeFinder";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,20 @@ export function ProductView() {
   const related = products
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 4);
+
+  // "Complete the Look" — pick coordinating items from OTHER categories
+  // e.g. if viewing a coat, suggest trousers + shoes + bag
+  const completeTheLook = products
+    .filter(
+      (p) =>
+        p.id !== product.id &&
+        p.category !== product.category &&
+        // pick items that visually pair well — different categories, premium price tier
+        p.price <= product.price * 1.5
+    )
+    .sort(() => 0.5 - Math.random()) // shuffle for variety
+    .slice(0, 3);
+  const lookTotal = completeTheLook.reduce((sum, p) => sum + p.price, 0) + product.price;
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -196,6 +211,20 @@ export function ProductView() {
             )}
           </div>
 
+          {/* Buy Now, Pay Later */}
+          {product.price >= 100 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/40 px-3 py-2 rounded-sm">
+              <span className="font-medium text-foreground">
+                ${(product.price / 4).toFixed(2)} × 4 interest-free
+              </span>
+              <span className="text-muted-foreground/60">·</span>
+              <span>with</span>
+              <span className="font-semibold tracking-wide">Klarna</span>
+              <span className="text-muted-foreground/40">|</span>
+              <span className="font-semibold tracking-wide">Afterpay</span>
+            </div>
+          )}
+
           <p className="text-muted-foreground leading-relaxed">
             {product.shortDescription}
           </p>
@@ -235,10 +264,23 @@ export function ProductView() {
               <Label className="text-[11px] tracking-wide-luxe uppercase">
                 Size {selectedSize && <span className="text-foreground normal-case tracking-normal">: {selectedSize}</span>}
               </Label>
-              <button className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1">
-                <Ruler className="h-3.5 w-3.5" />
-                Size Guide
-              </button>
+              <div className="flex items-center gap-3">
+                <SizeFinder
+                  sizes={product.sizes}
+                  onPick={(s) => {
+                    setSelectedSize(s);
+                    setSizeError(false);
+                    toast.success(`Size ${s} selected`, {
+                      description: "Based on your Size Finder input",
+                    });
+                  }}
+                />
+                <span className="text-muted-foreground/40">·</span>
+                <button className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1">
+                  <Ruler className="h-3.5 w-3.5" />
+                  Size Guide
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {product.sizes.map((size) => (
@@ -549,6 +591,67 @@ export function ProductView() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* COMPLETE THE LOOK */}
+      {completeTheLook.length > 0 && (
+        <div className="mt-24">
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+            <div>
+              <p className="text-[11px] tracking-luxe uppercase text-accent mb-2">
+                Curated by our stylists
+              </p>
+              <h2 className="font-serif text-3xl lg:text-4xl">Complete the Look</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                Pieces that pair perfectly with the {product.name.split(" ").slice(-2).join(" ")}.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] tracking-wide-luxe uppercase text-muted-foreground">
+                Complete look total
+              </p>
+              <p className="font-serif text-2xl">${lookTotal.toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 sm:gap-x-6">
+            {/* The current product (first card) */}
+            <div className="relative">
+              <div className="aspect-[3/4] overflow-hidden rounded-sm bg-muted mb-3">
+                <img
+                  src={product.images[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="text-[10px] tracking-luxe uppercase text-accent">This piece</p>
+              <p className="font-serif text-sm line-clamp-1">{product.name}</p>
+              <p className="text-sm font-medium mt-1">${product.price.toLocaleString()}</p>
+            </div>
+            {completeTheLook.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <Button
+              variant="outline"
+              className="rounded-none h-11 px-6 text-sm tracking-wide-luxe uppercase"
+              onClick={() => {
+                // Add all coordinating items to cart
+                completeTheLook.forEach((p) => {
+                  addToCart(p, p.sizes[0], p.colors[0].name, 1);
+                });
+                toast.success(`Added ${completeTheLook.length} pieces to your bag`, {
+                  description: `Complete the look — $${lookTotal.toLocaleString()}`,
+                });
+              }}
+            >
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Add All to Bag · ${lookTotal.toLocaleString()}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* RELATED */}
       {related.length > 0 && (

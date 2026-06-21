@@ -247,6 +247,18 @@ export function CartDrawer() {
                       ${subtotal.toLocaleString()}
                     </span>
                   </div>
+                  {subtotal >= 100 && (
+                    <div className="flex items-center gap-2 text-xs bg-secondary/40 px-3 py-2 rounded-sm">
+                      <span className="text-muted-foreground">or 4 payments of</span>
+                      <span className="font-medium text-foreground">
+                        ${(subtotal / 4).toFixed(2)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        · interest-free with
+                      </span>
+                      <span className="font-semibold tracking-wide">Klarna</span>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Shipping & taxes calculated at checkout
                   </p>
