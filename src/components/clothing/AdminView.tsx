@@ -52,6 +52,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ImageUploader } from "./ImageUploader";
+import { isClientAdminEmail } from "@/lib/client-admin";
 
 type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio";
 
@@ -153,7 +154,7 @@ export function AdminView() {
   // Admin-only: listen to all order updates via socket.io
   const { updates, connected } = useAdminOrderUpdates(true);
 
-  const isAdmin = (session?.user as any)?.isAdmin;
+  const isAdmin = (session?.user as any)?.isAdmin || isClientAdminEmail(session?.user?.email);
 
   // Auth gate
   if (status === "loading") {

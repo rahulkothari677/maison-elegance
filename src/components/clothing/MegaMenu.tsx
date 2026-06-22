@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Home, ChevronRight } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { categories as flatCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 type Category = {
@@ -16,19 +17,43 @@ type Category = {
   children: Category[];
 };
 
+// Fallback categories from static data — used when API fails (e.g. DB not seeded)
+const FALLBACK_TREE: Category[] = flatCategories
+  .filter((c) => c !== "All")
+  .map((c, i) => ({
+    id: `fallback-${c}`,
+    name: c,
+    slug: c.toLowerCase(),
+    parentId: null,
+    image: null,
+    description: `Premium ${c.toLowerCase()} collection`,
+    children: [],
+  }));
+
 export function MegaMenu() {
   const { setView } = useStore();
-  const [tree, setTree] = useState<Category[]>([]);
+  const [tree, setTree] = useState<Category[]>(FALLBACK_TREE);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch categories on mount
+  // Fetch categories on mount — with fallback
   useEffect(() => {
     fetch("/api/categories")
-      .then((r) => r.json())
-      .then((data) => setTree(data.tree || []))
-      .catch(() => {});
+      .then((r) => {
+        if (!r.ok) throw new Error("API failed");
+        return r.json();
+      })
+      .then((data) => {
+        if (data.tree && data.tree.length > 0) {
+          setTree(data.tree);
+        }
+        // else keep using FALLBACK_TREE already set as initial state
+      })
+      .catch(() => {
+        // API failed — keep using FALLBACK_TREE (already in state)
+        console.log("MegaMenu: using fallback categories (API unavailable)");
+      });
   }, []);
 
   const handleItemEnter = (slug: string) => {

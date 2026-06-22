@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { isClientAdminEmail } from "@/lib/client-admin";
 import { MegaMenu } from "./MegaMenu";
 import { ThemeToggle } from "./ThemeToggle";
 import { CurrencySelector } from "./CurrencySelector";
@@ -54,7 +55,17 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [mobileCategoryTree, setMobileCategoryTree] = useState<any[]>([]);
+  const [mobileCategoryTree, setMobileCategoryTree] = useState<any[]>(
+    // Fallback: show flat categories immediately (before API loads)
+    categories
+      .filter((c) => c !== "All")
+      .map((c) => ({
+        id: `fb-${c}`,
+        name: c,
+        slug: c.toLowerCase(),
+        children: [],
+      }))
+  );
   const [expandedMobileCat, setExpandedMobileCat] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,12 +74,22 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Fetch top-level categories for mobile menu
+  // Fetch top-level categories for mobile menu — with fallback
   useEffect(() => {
     fetch("/api/categories")
-      .then((r) => r.json())
-      .then((data) => setMobileCategoryTree(data.tree || []))
-      .catch(() => {});
+      .then((r) => {
+        if (!r.ok) throw new Error("API failed");
+        return r.json();
+      })
+      .then((data) => {
+        if (data.tree && data.tree.length > 0) {
+          setMobileCategoryTree(data.tree);
+        }
+        // else keep using fallback already in state
+      })
+      .catch(() => {
+        // API failed — keep using fallback categories already in state
+      });
   }, []);
 
   const count = cartCount(cart);
@@ -427,7 +448,7 @@ export function Header() {
                       <Heart className="h-4 w-4 mr-2" />
                       Loyalty & Points
                     </DropdownMenuItem>
-                    {(session.user as any)?.isAdmin && (
+                    {((session.user as any)?.isAdmin || isClientAdminEmail(session?.user?.email)) && (
                       <DropdownMenuItem onClick={() => setView("admin")}>
                         <Crown className="h-4 w-4 mr-2" />
                         Admin Dashboard

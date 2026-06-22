@@ -42,19 +42,43 @@ export function ShopView() {
 
   // Server-side data
   const [apiProducts, setApiProducts] = useState<any[] | null>(null);
-  const [categoryTree, setCategoryTree] = useState<Category[]>([]);
+  const [categoryTree, setCategoryTree] = useState<Category[]>(
+    // Fallback: flat categories from static data
+    localProducts
+      ? Array.from(
+          new Set(localProducts.map((p) => p.category))
+        )
+          .filter((c) => c !== "All")
+          .map((c, i) => ({
+            id: `fb-${c}`,
+            name: c,
+            slug: c.toLowerCase(),
+            parentId: null,
+            children: [],
+          }))
+      : []
+  );
   const [crumbs, setCrumbs] = useState<Category[]>([]); // breadcrumb path
   const [activeSubs, setActiveSubs] = useState<Category[]>([]); // siblings at sub level
 
-  // Fetch category tree on mount
+  // Fetch category tree on mount — with fallback
   useEffect(() => {
     fetch("/api/categories")
-      .then((r) => r.json())
-      .then((data) => setCategoryTree(data.tree || []))
-      .catch(() => {});
+      .then((r) => {
+        if (!r.ok) throw new Error("API failed");
+        return r.json();
+      })
+      .then((data) => {
+        if (data.tree && data.tree.length > 0) {
+          setCategoryTree(data.tree);
+        }
+      })
+      .catch(() => {
+        // API failed — keep using fallback categories
+      });
   }, []);
 
-  // Fetch products from API whenever filters change
+  // Fetch products from API whenever filters change — with fallback to local data
   useEffect(() => {
     Promise.resolve().then(() => setApiProducts(null)); // show skeleton
     const params = new URLSearchParams();
@@ -69,9 +93,67 @@ export function ShopView() {
       params.set("colors", selectedColors.join(","));
 
     fetch(`/api/products?${params.toString()}`)
-      .then((r) => r.json())
-      .then((data) => setApiProducts(data.products || []))
-      .catch(() => setApiProducts([]));
+      .then((r) => {
+        if (!r.ok) throw new Error("API failed");
+        return r.json();
+      })
+      .then((data) => {
+        if (data.products && data.products.length > 0) {
+          setApiProducts(data.products);
+        } else {
+          // Fallback: filter local products
+          let result = [...localProducts];
+          if (selectedCategory && selectedCategory !== "all") {
+            const catName = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
+            result = result.filter(
+              (p) =>
+                p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+                p.category === catName
+            );
+          }
+          if (selectedSizes.length > 0) {
+            result = result.filter((p) =>
+              p.sizes.some((s) => selectedSizes.includes(s))
+            );
+          }
+          if (selectedColors.length > 0) {
+            result = result.filter((p) =>
+              p.colors.some((c) => selectedColors.includes(c.name))
+            );
+          }
+          result = result.filter(
+            (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
+          );
+          setApiProducts(result);
+        }
+      })
+      .catch(() => {
+        // API failed — use local product data as fallback
+        console.log("ShopView: using fallback local products (API unavailable)");
+        let result = [...localProducts];
+        if (selectedCategory && selectedCategory !== "all") {
+          const catName = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
+          result = result.filter(
+            (p) =>
+              p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+              p.category === catName
+          );
+        }
+        if (selectedSizes.length > 0) {
+          result = result.filter((p) =>
+            p.sizes.some((s) => selectedSizes.includes(s))
+          );
+        }
+        if (selectedColors.length > 0) {
+          result = result.filter((p) =>
+            p.colors.some((c) => selectedColors.includes(c.name))
+          );
+        }
+        result = result.filter(
+          (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
+        );
+        setApiProducts(result);
+      });
   }, [selectedCategory, sortBy, priceRange, selectedSizes, selectedColors]);
 
   // Compute breadcrumb path for selectedCategory
