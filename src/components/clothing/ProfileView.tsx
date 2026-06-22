@@ -29,6 +29,10 @@ import {
   Truck,
   RefreshCw,
   Loader2,
+  Volume2,
+  VolumeX,
+  MousePointer,
+  MouseOff,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useUserData } from "@/lib/use-user-data";
@@ -78,6 +82,10 @@ export function ProfileView() {
     setView,
     setProfileTab,
     profileTab,
+    soundEnabled,
+    setSoundEnabled,
+    cursorEnabled,
+    setCursorEnabled,
   } = store;
 
   // Real auth + data fetching
@@ -1514,6 +1522,56 @@ export function ProfileView() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* App Experience — Sound + Cursor toggles */}
+              <div className="p-6 border border-border rounded-sm">
+                <h3 className="font-serif text-lg mb-4">App Experience</h3>
+                <div className="space-y-4">
+                  {/* Sound toggle */}
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+                        {soundEnabled ? <Volume2 className="h-4 w-4 text-accent" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">UI Sound Effects</p>
+                        <p className="text-xs text-muted-foreground">
+                          Subtle chimes when adding to cart, saving items, and more
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={soundEnabled}
+                      onCheckedChange={(checked) => {
+                        setSoundEnabled(checked);
+                        toast.success(`Sound effects ${checked ? "enabled" : "disabled"}`);
+                      }}
+                    />
+                  </div>
+
+                  {/* Cursor toggle */}
+                  <div className="flex items-center justify-between py-2 border-t border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+                        {cursorEnabled ? <MousePointer className="h-4 w-4 text-accent" /> : <MouseOff className="h-4 w-4 text-muted-foreground" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Custom Cursor (Desktop)</p>
+                        <p className="text-xs text-muted-foreground">
+                          Gold ring cursor that adapts to context (hover, zoom, grab)
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={cursorEnabled}
+                      onCheckedChange={(checked) => {
+                        setCursorEnabled(checked);
+                        toast.success(`Custom cursor ${checked ? "enabled" : "disabled"}`);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 

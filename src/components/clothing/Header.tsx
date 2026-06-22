@@ -15,10 +15,6 @@ import {
   LogOut,
   Crown,
   Home,
-  Volume2,
-  VolumeX,
-  MousePointer,
-  MousePointerOff,
 } from "lucide-react";
 import { useStore, cartCount } from "@/lib/store";
 import { products, categories } from "@/lib/data";
@@ -54,10 +50,6 @@ export function Header() {
     setCartDrawerOpen,
     setProfileTab,
     cartBounce,
-    soundEnabled,
-    setSoundEnabled,
-    cursorEnabled,
-    setCursorEnabled,
   } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -400,36 +392,6 @@ export function Header() {
               <div className="hidden sm:block">
                 <CurrencySelector compact />
               </div>
-
-              {/* Sound toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                aria-label={soundEnabled ? "Mute sounds" : "Enable sounds"}
-                className="hidden sm:inline-flex"
-              >
-                {soundEnabled ? (
-                  <Volume2 className="h-[18px] w-[18px]" />
-                ) : (
-                  <VolumeX className="h-[18px] w-[18px]" />
-                )}
-              </Button>
-
-              {/* Cursor toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCursorEnabled(!cursorEnabled)}
-                aria-label={cursorEnabled ? "Disable custom cursor" : "Enable custom cursor"}
-                className="hidden sm:inline-flex"
-              >
-                {cursorEnabled ? (
-                  <MousePointer className="h-[18px] w-[18px]" />
-                ) : (
-                  <MousePointerOff className="h-[18px] w-[18px]" />
-                )}
-              </Button>
 
               <ThemeToggle />
 
