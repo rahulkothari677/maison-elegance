@@ -251,8 +251,8 @@ export function HomeView() {
       {/* FLASH SALE */}
       <FlashSaleSection />
 
-      {/* Editorial Split */}
-      <section className="bg-secondary/40 border-y border-border">
+      {/* Editorial Split — with gradient surface */}
+      <section className="gradient-surface border-y border-border">
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-20 lg:py-28">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <motion.div variants={fadeUp} className="order-2 lg:order-1">

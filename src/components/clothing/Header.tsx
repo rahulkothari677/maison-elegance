@@ -166,8 +166,13 @@ export function Header() {
 
   return (
     <>
-      {/* Announcement bar */}
-      <div className="bg-primary text-primary-foreground py-2 overflow-hidden">
+      {/* Announcement bar — gradient with subtle shine */}
+      <div
+        className="py-2 overflow-hidden relative"
+        style={{
+          background: `linear-gradient(90deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 80%, var(--accent)) 50%, var(--primary) 100%)`,
+        }}
+      >
         <div className="flex whitespace-nowrap animate-marquee">
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="flex shrink-0">
@@ -179,24 +184,41 @@ export function Header() {
               ].map((text, j) => (
                 <span
                   key={j}
-                  className="text-[11px] tracking-wide-luxe uppercase mx-12 inline-flex items-center gap-3"
+                  className="text-[11px] tracking-wide-luxe uppercase mx-12 inline-flex items-center gap-3 text-primary-foreground"
                 >
-                  <span className="opacity-60">✦</span>
+                  <span style={{ color: "var(--accent)" }}>✦</span>
                   {text}
                 </span>
               ))}
             </div>
           ))}
         </div>
+        {/* Subtle shine overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.05) 100%)",
+          }}
+        />
       </div>
 
+      {/* Header — glassmorphism with gradient bottom border */}
       <header
         className={cn(
-          "sticky top-0 z-40 transition-all duration-500 border-b",
+          "sticky top-0 z-40 transition-all duration-500",
           scrolled
-            ? "bg-background/95 backdrop-blur-xl shadow-sm border-border"
-            : "bg-background border-transparent"
+            ? "bg-background/85 backdrop-blur-xl shadow-lg border-b"
+            : "bg-background/60 backdrop-blur-md border-b"
         )}
+        style={{
+          borderColor: scrolled
+            ? "var(--border)"
+            : "color-mix(in srgb, var(--accent) 20%, transparent)",
+          boxShadow: scrolled
+            ? "0 4px 30px rgba(0,0,0,0.06), 0 1px 0 color-mix(in srgb, var(--accent) 15%, transparent)"
+            : "none",
+        }}
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
           <div className="flex items-center justify-between h-20">

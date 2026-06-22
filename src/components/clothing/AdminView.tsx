@@ -2156,6 +2156,30 @@ function ThemeStudioTab() {
         </div>
       </div>
 
+      {/* Hero Carousel customization info */}
+      <div className="border border-border rounded-sm p-6 bg-secondary/20">
+        <h3 className="font-serif text-lg mb-3 flex items-center gap-2">
+          <Palette className="h-5 w-5 text-accent" />
+          Hero Carousel Images
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          The homepage hero carousel shows 5 rotating slides. Each slide has an image,
+          title, description, and CTA button. To customize the slides:
+        </p>
+        <ol className="text-sm space-y-2 text-muted-foreground list-decimal list-inside">
+          <li>Open <code className="bg-background px-1.5 py-0.5 rounded text-xs font-mono">src/components/clothing/HeroCarousel.tsx</code></li>
+          <li>Find the <code className="bg-background px-1.5 py-0.5 rounded text-xs font-mono">slides</code> array (line ~21)</li>
+          <li>Replace the <code className="bg-background px-1.5 py-0.5 rounded text-xs font-mono">image</code> URL with your image</li>
+          <li>Edit <code className="bg-background px-1.5 py-0.5 rounded text-xs font-mono">title</code>, <code className="bg-background px-1.5 py-0.5 rounded text-xs font-mono">titleAccent</code>, <code className="bg-background px-1.5 py-0.5 rounded text-xs font-mono">description</code></li>
+          <li>Update CTA label and action (links to product/category)</li>
+          <li>Save and the carousel updates instantly</li>
+        </ol>
+        <div className="mt-4 p-3 bg-accent/10 border border-accent/20 rounded-sm text-xs">
+          💡 <strong>Tip:</strong> Use high-resolution images (1920px+ wide) from Unsplash, or upload
+          your own via the Product image uploader and use the /uploads/ URL.
+        </div>
+      </div>
+
       {/* Customization panel */}
       {editing && draft && (
         <div className="border-2 border-accent/30 rounded-sm p-6 bg-secondary/10">

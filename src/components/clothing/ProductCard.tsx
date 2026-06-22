@@ -55,7 +55,8 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <div
-      className="group cursor-pointer"
+      className="group cursor-pointer rounded-sm transition-all duration-300 hover:shadow-xl"
+      style={{ borderRadius: "var(--radius)" }}
       onMouseEnter={() => {
         setHovering(true);
         if (product.images.length > 1) setImgIdx(1);

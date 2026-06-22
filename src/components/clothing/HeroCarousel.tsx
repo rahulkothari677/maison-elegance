@@ -176,19 +176,27 @@ export function HeroCarousel() {
             />
           </motion.div>
         </AnimatePresence>
-        {/* Gradient overlays */}
+        {/* Gradient overlays — multi-layered for depth */}
         <div
           className={cn(
             "absolute inset-0",
             slide.align === "left" &&
-              "bg-gradient-to-r from-black/65 via-black/30 to-transparent",
+              "bg-gradient-to-r from-black/70 via-black/35 to-transparent",
             slide.align === "right" &&
-              "bg-gradient-to-l from-black/65 via-black/30 to-transparent",
+              "bg-gradient-to-l from-black/70 via-black/35 to-transparent",
             slide.align === "center" &&
-              "bg-gradient-to-b from-transparent via-black/30 to-black/60"
+              "bg-gradient-to-b from-transparent via-black/35 to-black/65"
           )}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        {/* Bottom fade for smooth transition into page */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+        {/* Subtle accent tint at edges */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at ${slide.align === "right" ? "20%" : "80%"} 50%, transparent 40%, rgba(0,0,0,0.15) 100%)`,
+          }}
+        />
       </div>
 
       {/* Content */}

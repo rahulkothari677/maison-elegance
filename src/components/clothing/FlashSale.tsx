@@ -156,8 +156,7 @@ export function FlashSaleSection() {
         <div className="text-center mt-10">
           <Button
             onClick={() => setView("shop")}
-            variant="outline"
-            className="rounded-none h-12 px-8 text-sm tracking-wide-luxe uppercase border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground hover:border-primary-foreground/50"
+            className="rounded-none h-12 px-8 text-sm tracking-wide-luxe uppercase bg-accent text-accent-foreground hover:bg-accent/90 border border-accent"
           >
             Shop All Sale Items
             <ArrowRight className="ml-2 h-4 w-4" />
