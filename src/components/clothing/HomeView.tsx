@@ -22,9 +22,8 @@ const stagger = {
 };
 
 export function HomeView() {
-  const { setView, setCategory, openProduct, lastViewedProductIds } = useStore();
+  const { setView, setCategory, openProduct, lastViewedProductIds, setInfoPage } = useStore();
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
-  const [apiProducts, setApiProducts] = useState<typeof products | null>(null);
   const lookbookRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: lookbookRef,
@@ -36,6 +35,9 @@ export function HomeView() {
 
   // Fetch products from API (Turso DB) — falls back to static local products
   // if the API is unavailable, so the page never breaks.
+  const [apiProducts, setApiProducts] = useState<typeof products | null>(null);
+  const [siteContent, setSiteContent] = useState<Record<string, any> | null>(null);
+
   useEffect(() => {
     fetch("/api/products?sort=newest")
       .then((r) => {
@@ -50,6 +52,16 @@ export function HomeView() {
       .catch(() => {
         // Silent fallback to static products
       });
+
+    // Fetch all editable site content in one call
+    fetch("/api/site-content")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.sections) {
+          setSiteContent(data.sections);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Use API products if available, otherwise static local products
@@ -150,10 +162,10 @@ export function HomeView() {
       <section className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-20 lg:py-28">
         <motion.div variants={fadeUp} className="text-center mb-12 lg:mb-16">
           <p className="text-[11px] tracking-luxe uppercase text-accent mb-3">
-            Curated Categories
+            {siteContent?.exploreMaison?.subtitle || "Curated Categories"}
           </p>
           <h2 className="font-serif text-4xl lg:text-5xl text-balance">
-            Explore the Maison
+            {siteContent?.exploreMaison?.title || "Explore the Maison"}
           </h2>
         </motion.div>
 
@@ -248,9 +260,11 @@ export function HomeView() {
         >
           <div>
             <p className="text-[11px] tracking-luxe uppercase text-accent mb-3">
-              Just Arrived
+              {siteContent?.newThisSeason?.subtitle || "Just Arrived"}
             </p>
-            <h2 className="font-serif text-4xl lg:text-5xl">New This Season</h2>
+            <h2 className="font-serif text-4xl lg:text-5xl">
+              {siteContent?.newThisSeason?.title || "New This Season"}
+            </h2>
           </div>
           <Button
             variant="link"
@@ -417,14 +431,13 @@ export function HomeView() {
             className="text-center mb-14 lg:mb-20"
           >
             <p className="text-[11px] tracking-luxe uppercase text-accent mb-3">
-              The Lookbook · A/W 2026
+              {(siteContent?.lookbook?.items?.[0]?.subtitle) || "The Lookbook · A/W 2026"}
             </p>
             <h2 className="font-serif text-4xl lg:text-6xl text-balance">
-              The Poetry of Quiet Detail
+              {siteContent?.lookbook?.title || "The Poetry of Quiet Detail"}
             </h2>
             <p className="text-muted-foreground mt-5 max-w-2xl mx-auto text-lg text-pretty">
-              An editorial study of texture, drape, and the kind of craftsmanship
-              that reveals itself slowly — to those who know where to look.
+              {siteContent?.lookbook?.subtitle || "An editorial study of texture, drape, and the kind of craftsmanship that reveals itself slowly — to those who know where to look."}
             </p>
           </motion.div>
 
@@ -436,15 +449,14 @@ export function HomeView() {
                 className="block w-full group relative overflow-hidden rounded-sm aspect-[4/5]"
               >
                 <img
-                  src={heroImages.editorial1}
-                  alt="Editorial 1"
+                  src={siteContent?.lookbook?.items?.[0]?.image || heroImages.editorial1}
+                  alt={siteContent?.lookbook?.items?.[0]?.title || "Editorial 1"}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5 text-white text-left">
                   <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">Chapter One</p>
-                  <p className="font-serif text-xl lg:text-2xl">The Tailored Coat</p>
-                  <p className="text-xs text-white/80 mt-0.5">Italian wool-cashmere, Florence atelier</p>
+                  <p className="font-serif text-xl lg:text-2xl">{siteContent?.lookbook?.items?.[0]?.title || "The Tailored Coat"}</p>
                 </div>
               </button>
             </motion.div>
@@ -455,34 +467,33 @@ export function HomeView() {
                 onClick={() => openProduct("p2")}
                 className="col-span-2 block w-full group relative overflow-hidden rounded-sm aspect-[21/9]"
               >
-                <img src={heroImages.editorial2} alt="Editorial 2" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                <img src={siteContent?.lookbook?.items?.[1]?.image || heroImages.editorial2} alt="Editorial 2" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-5 right-5 text-white text-left">
                   <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">Chapter Two</p>
-                  <p className="font-serif text-lg lg:text-xl">The Silk Slip</p>
-                  <p className="text-xs text-white/80 mt-0.5">19-momme charmeuse, bias-cut in Como</p>
+                  <p className="font-serif text-lg lg:text-xl">{siteContent?.lookbook?.items?.[1]?.title || "The Silk Slip"}</p>
                 </div>
               </motion.button>
               <motion.button
                 onClick={() => openProduct("p9")}
                 className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4]"
               >
-                <img src={heroImages.editorial3} alt="Editorial 3" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                <img src={siteContent?.lookbook?.items?.[2]?.image || heroImages.editorial3} alt="Editorial 3" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white text-left">
                   <p className="text-[9px] tracking-luxe uppercase text-white/70 mb-1">Chapter Three</p>
-                  <p className="font-serif text-base lg:text-lg">Hand-Welted Boots</p>
+                  <p className="font-serif text-base lg:text-lg">{siteContent?.lookbook?.items?.[2]?.title || "Hand-Welted Boots"}</p>
                 </div>
               </motion.button>
               <motion.button
                 onClick={() => openProduct("p5")}
                 className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4]"
               >
-                <img src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80" alt="Editorial 4" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                <img src={siteContent?.lookbook?.items?.[3]?.image || "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80"} alt="Editorial 4" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white text-left">
                   <p className="text-[9px] tracking-luxe uppercase text-white/70 mb-1">Chapter Four</p>
-                  <p className="font-serif text-base lg:text-lg">Saddle-Stitched Leather</p>
+                  <p className="font-serif text-base lg:text-lg">{siteContent?.lookbook?.items?.[3]?.title || "Saddle-Stitched Leather"}</p>
                 </div>
               </motion.button>
             </div>
@@ -630,28 +641,33 @@ export function HomeView() {
             className="text-center mb-10"
           >
             <p className="text-[11px] tracking-luxe uppercase text-accent mb-3">
-              @maison.elegance
+              {siteContent?.followWorld?.subtitle || "@maison.elegance"}
             </p>
-            <h2 className="font-serif text-3xl lg:text-4xl">Follow Our World</h2>
+            <h2 className="font-serif text-3xl lg:text-4xl">
+              {siteContent?.followWorld?.title || "Follow Our World"}
+            </h2>
             <p className="text-muted-foreground mt-2 text-sm">
               Behind the seams — atelier visits, new arrivals, and styling inspiration
             </p>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-            {[
-              "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1485231183935-fffde7cc051e?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=400&q=80",
-              "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=400&q=80",
-            ].map((img, i) => (
+            {(siteContent?.followWorld?.items?.length > 0
+              ? siteContent.followWorld.items.map((item: any) => item.image)
+              : [
+                  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1485231183935-fffde7cc051e?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=400&q=80",
+                  "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=400&q=80",
+                ]
+            ).map((img: string, i: number) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -679,7 +695,7 @@ export function HomeView() {
               variant="outline"
               className="rounded-none h-11 px-6 text-sm tracking-wide-luxe uppercase"
             >
-              Follow @maison.elegance
+              Follow {siteContent?.followWorld?.subtitle || "@maison.elegance"}
             </Button>
           </div>
         </div>
@@ -692,21 +708,20 @@ export function HomeView() {
       >
         <div className="relative overflow-hidden rounded-sm">
           <img
-            src={heroImages.tertiary}
+            src={siteContent?.atelierCircle?.image || heroImages.tertiary}
             alt="Discover the collection"
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative px-8 py-20 lg:px-16 lg:py-28 text-center text-white">
             <p className="text-[11px] tracking-luxe uppercase text-white/80 mb-4">
-              Become a Member
+              {siteContent?.atelierCircle?.subtitle || "Become a Member"}
             </p>
             <h2 className="font-serif text-4xl lg:text-6xl text-balance">
-              The Atelier Circle Awaits
+              {siteContent?.atelierCircle?.title || "The Atelier Circle Awaits"}
             </h2>
             <p className="text-white/80 mt-5 max-w-xl mx-auto text-lg text-pretty">
-              Members earn points on every order, receive complimentary
-              shipping, and access private events at our Florence atelier.
+              {siteContent?.atelierCircle?.description || "Members earn points on every order, receive complimentary shipping, and access private events at our Florence atelier."}
             </p>
             <div className="flex flex-wrap justify-center gap-3 mt-9">
               <Button
@@ -714,7 +729,7 @@ export function HomeView() {
                 onClick={() => setView("profile")}
                 className="rounded-none bg-white text-black hover:bg-white/90 h-12 px-8 text-sm tracking-wide-luxe uppercase"
               >
-                Join Now
+                {siteContent?.atelierCircle?.ctaLabel || "Join Now"}
                 <ArrowUpRight className="ml-2 h-4 w-4" />
               </Button>
               <Button

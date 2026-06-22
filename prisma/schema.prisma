@@ -290,3 +290,26 @@ model WishlistItem {
 
   @@unique([userId, productId])
 }
+
+// ─── SITE CONTENT (admin-editable homepage sections) ────────────────────────
+//
+// One row per section (heroCarousel, lookbook, exploreMaison, etc.).
+// `data` is a JSON string with whatever fields that section needs:
+//   - heroCarousel:  { slides: [{image, season, title, titleAccent, description, ctaLabel, ctaLink}] }
+//   - lookbook:      { items: [{image, title, subtitle}] }
+//   - exploreMaison: { items: [{image, title, description, ctaLink}] }
+//   - followWorld:   { items: [{image, caption, link}] }
+//   - atelierCircle: { title, subtitle, description, image, benefits[], ctaLabel }
+//   - newThisSeason: { title, subtitle }
+//   - flashSale:     { title, subtitle, image, endsAt, badge, discount }
+//   - announcement:  { text, link, enabled }
+//
+// The public API returns all rows; the admin API allows GET/PUT per section.
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  section   String   @unique
+  data      String   // JSON string
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}

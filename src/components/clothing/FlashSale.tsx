@@ -9,37 +9,34 @@ import { useCurrency } from "@/lib/use-currency";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./ProductCard";
 
-// Flash sale configuration — runs for 48 hours from page load
-// In production, this would come from the database/admin panel
-const FLASH_SALE_HOURS = 48;
-
 // Pick products that have a compareAtPrice (already discounted) for flash sale
 const flashSaleProducts = products
   .filter((p) => p.compareAtPrice)
   .slice(0, 4);
 
-function useCountdown(hours: number) {
+function useCountdown(endsAt: string | null) {
   const [timeLeft, setTimeLeft] = useState({
-    hours: hours,
+    hours: 0,
     minutes: 0,
     seconds: 0,
   });
+  const [active, setActive] = useState(true);
 
   useEffect(() => {
-    // Store the end time in sessionStorage so it persists across refreshes
-    const key = "flash-sale-end";
-    let endTime = sessionStorage.getItem(key);
-    if (!endTime) {
-      const end = Date.now() + hours * 60 * 60 * 1000;
-      endTime = String(end);
-      sessionStorage.setItem(key, endTime);
+    if (!endsAt) {
+      setActive(false);
+      return;
     }
-
-    const end = parseInt(endTime);
+    const end = new Date(endsAt).getTime();
+    if (isNaN(end)) {
+      setActive(false);
+      return;
+    }
     const update = () => {
       const diff = end - Date.now();
       if (diff <= 0) {
         setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        setActive(false);
         return;
       }
       const h = Math.floor(diff / (1000 * 60 * 60));
@@ -51,25 +48,38 @@ function useCountdown(hours: number) {
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [hours]);
+  }, [endsAt]);
 
-  return timeLeft;
+  return { timeLeft, active };
 }
 
 export function FlashSaleSection() {
   const { setView, openProduct } = useStore();
   const { convert } = useCurrency();
-  const timeLeft = useCountdown(FLASH_SALE_HOURS);
+  const [config, setConfig] = useState<any>(null);
 
+  useEffect(() => {
+    fetch("/api/site-content?section=flashSale")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.data) setConfig(data.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const { timeLeft, active } = useCountdown(config?.endsAt || null);
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  // Hide if admin disabled it OR no products on sale OR countdown expired
+  if (config?.enabled === false) return null;
   if (flashSaleProducts.length === 0) return null;
+  if (config?.endsAt && !active) return null;
 
   // Calculate total savings
   const totalSavings = flashSaleProducts.reduce(
     (sum, p) => sum + ((p.compareAtPrice || 0) - p.price),
     0
   );
-
-  const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
     <section className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground">
@@ -87,45 +97,46 @@ export function FlashSaleSection() {
                 <Zap className="h-4 w-4 text-accent-foreground" fill="currentColor" />
               </div>
               <p className="text-[11px] tracking-luxe uppercase text-accent font-medium">
-                Limited Time · Up to 20% Off
+                {config?.badge ? `Limited Time · ${config.badge}` : "Limited Time · Up to 20% Off"}
               </p>
             </div>
             <h2 className="font-serif text-4xl lg:text-5xl text-balance">
-              Flash Sale
+              {config?.title || "Flash Sale"}
             </h2>
             <p className="text-primary-foreground/70 mt-2 max-w-md">
-              Save {convert(totalSavings)} across {flashSaleProducts.length} premium pieces.
-              Ends soon — once it's gone, it's gone.
+              {config?.subtitle || `Save ${convert(totalSavings)} across ${flashSaleProducts.length} premium pieces. Ends soon — once it's gone, it's gone.`}
             </p>
           </div>
 
           {/* Countdown timer */}
-          <div className="flex items-center gap-3">
-            <Clock className="h-5 w-5 text-accent" />
-            <div className="flex items-center gap-2">
-              {[
-                { label: "Hours", value: timeLeft.hours },
-                { label: "Min", value: timeLeft.minutes },
-                { label: "Sec", value: timeLeft.seconds },
-              ].map((unit, i) => (
-                <div key={unit.label} className="flex items-center gap-2">
-                  <div className="text-center">
-                    <div className="bg-primary-foreground/10 backdrop-blur border border-primary-foreground/20 rounded-sm w-16 h-16 flex items-center justify-center">
-                      <span className="font-serif text-2xl tabular-nums">
-                        {pad(unit.value)}
-                      </span>
+          {active && (
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-accent" />
+              <div className="flex items-center gap-2">
+                {[
+                  { label: "Hours", value: timeLeft.hours },
+                  { label: "Min", value: timeLeft.minutes },
+                  { label: "Sec", value: timeLeft.seconds },
+                ].map((unit, i) => (
+                  <div key={unit.label} className="flex items-center gap-2">
+                    <div className="text-center">
+                      <div className="bg-primary-foreground/10 backdrop-blur border border-primary-foreground/20 rounded-sm w-16 h-16 flex items-center justify-center">
+                        <span className="font-serif text-2xl tabular-nums">
+                          {pad(unit.value)}
+                        </span>
+                      </div>
+                      <p className="text-[9px] tracking-wide-luxe uppercase text-primary-foreground/60 mt-1">
+                        {unit.label}
+                      </p>
                     </div>
-                    <p className="text-[9px] tracking-wide-luxe uppercase text-primary-foreground/60 mt-1">
-                      {unit.label}
-                    </p>
+                    {i < 2 && (
+                      <span className="font-serif text-2xl text-accent">:</span>
+                    )}
                   </div>
-                  {i < 2 && (
-                    <span className="font-serif text-2xl text-accent">:</span>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Products grid */}

@@ -7,131 +7,104 @@ import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type Slide = {
+type ApiSlide = {
   image: string;
   season: string;
   title: string;
   titleAccent: string;
   description: string;
-  cta: { label: string; action: () => void };
-  ctaSecondary?: { label: string; action: () => void };
-  align: "left" | "center" | "right";
+  ctaLabel: string;
+  ctaLink: string;
 };
+
+// Default slides — used before API loads (and as a fallback if API fails)
+// so the homepage never shows an empty hero.
+const DEFAULT_SLIDES: ApiSlide[] = [
+  {
+    image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1920&q=80",
+    season: "Autumn / Winter 2026",
+    title: "The Art of",
+    titleAccent: "Quiet Luxury.",
+    description: "Handcrafted pieces from the world's finest ateliers.",
+    ctaLabel: "Explore Collection",
+    ctaLink: "shop",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1920&q=80",
+    season: "The Silk Collection",
+    title: "Draped in",
+    titleAccent: "Silk & Shadow.",
+    description: "Bias-cut silk charmeuse that moves like liquid light.",
+    ctaLabel: "Shop Dresses",
+    ctaLink: "women",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=1920&q=80",
+    season: "The Tailored Man",
+    title: "Sartorial",
+    titleAccent: "Perfection.",
+    description: "Half-canvas wool suits hand-tailored in Naples.",
+    ctaLabel: "Shop Men's",
+    ctaLink: "men",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=1920&q=80",
+    season: "Florence Atelier",
+    title: "Crafted to",
+    titleAccent: "Outlive You.",
+    description: "Hand-welted boots, saddle-stitched leather.",
+    ctaLabel: "Shop Footwear",
+    ctaLink: "footwear",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1920&q=80",
+    season: "The Art of Leather",
+    title: "Saddle-Stitched",
+    titleAccent: "Heritage.",
+    description: "Full-grain Italian leather, hand-stitched in Florence.",
+    ctaLabel: "Shop Accessories",
+    ctaLink: "accessories",
+  },
+];
 
 const SLIDE_DURATION = 6000;
 
 export function HeroCarousel() {
-  const { setCategory, setView, openProduct } = useStore();
+  const { setCategory, setView, openProduct, setInfoPage } = useStore();
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [apiSlides, setApiSlides] = useState<ApiSlide[] | null>(null);
 
-  const slides: Slide[] = [
-    {
-      image:
-        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1920&q=80",
-      season: "Autumn / Winter 2026",
-      title: "The Art of",
-      titleAccent: "Quiet Luxury.",
-      description:
-        "Handcrafted pieces from the world's finest ateliers. Materials sourced with intention, constructed to outlast trends.",
-      cta: {
-        label: "Explore Collection",
-        action: () => {
-          setCategory("all");
-          setView("shop");
-        },
-      },
-      ctaSecondary: {
-        label: "Featured Piece",
-        action: () => openProduct("p1"),
-      },
-      align: "left",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1920&q=80",
-      season: "The Silk Collection",
-      title: "Draped in",
-      titleAccent: "Silk & Shadow.",
-      description:
-        "Bias-cut silk charmeuse that moves like liquid light. The Aurora dress — an evening masterpiece from our Como atelier.",
-      cta: {
-        label: "Shop Dresses",
-        action: () => {
-          setCategory("women");
-          setView("shop");
-        },
-      },
-      ctaSecondary: {
-        label: "View Aurora Dress",
-        action: () => openProduct("p2"),
-      },
-      align: "left",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=1920&q=80",
-      season: "The Tailored Man",
-      title: "Sartorial",
-      titleAccent: "Perfection.",
-      description:
-        "Half-canvas wool suits hand-tailored in Naples. The kind of jacket that makes you stand differently — shoulders back, chin up.",
-      cta: {
-        label: "Shop Men's",
-        action: () => {
-          setCategory("men");
-          setView("shop");
-        },
-      },
-      ctaSecondary: {
-        label: "View Wool Suit",
-        action: () => openProduct("p6"),
-      },
-      align: "right",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=1920&q=80",
-      season: "Florence Atelier",
-      title: "Crafted to",
-      titleAccent: "Outlive You.",
-      description:
-        "Hand-welted boots, saddle-stitched leather, half-canvas construction. Pieces designed for decades of wear — and a lifetime of repairs.",
-      cta: {
-        label: "Shop Footwear",
-        action: () => {
-          setCategory("footwear");
-          setView("shop");
-        },
-      },
-      ctaSecondary: {
-        label: "View Verona Boots",
-        action: () => openProduct("p9"),
-      },
-      align: "left",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1920&q=80",
-      season: "The Art of Leather",
-      title: "Saddle-Stitched",
-      titleAccent: "Heritage.",
-      description:
-        "Full-grain Italian leather, hand-stitched in Florence. The Mira tote develops a patina that tells your story — one journey at a time.",
-      cta: {
-        label: "Shop Accessories",
-        action: () => {
-          setCategory("accessories");
-          setView("shop");
-        },
-      },
-      ctaSecondary: {
-        label: "View Mira Tote",
-        action: () => openProduct("p5"),
-      },
-      align: "right",
-    },
-  ];
+  // Fetch slides from API on mount
+  useEffect(() => {
+    fetch("/api/site-content?section=heroCarousel")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.data?.slides && Array.isArray(data.data.slides) && data.data.slides.length > 0) {
+          setApiSlides(data.data.slides);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const slides: ApiSlide[] = apiSlides || DEFAULT_SLIDES;
+
+  // Resolve a ctaLink string into an actual navigation action
+  const resolveAction = (link: string) => {
+    if (!link) return () => setView("home");
+    const slug = link.toLowerCase().trim();
+    if (slug === "shop" || slug === "all") return () => { setCategory("all"); setView("shop"); };
+    if (slug === "women" || slug === "men" || slug === "outerwear" || slug === "footwear" || slug === "accessories") {
+      return () => { setCategory(slug); setView("shop"); };
+    }
+    if (slug === "lookbook") return () => setView("home"); // scroll behavior — handled elsewhere
+    if (slug === "community") return () => setView("community");
+    if (slug === "subscription" || slug === "atelier-box") return () => setView("subscription");
+    if (slug === "visual-search") return () => setView("visual-search");
+    // Info pages: our-story, craftsmanship, sustainability, materials, ateliers,
+    // shipping-returns, size-guide, faq, privacy, terms, contact, careers, press
+    return () => setInfoPage(slug);
+  };
 
   const next = useCallback(() => {
     setCurrent((c) => (c + 1) % slides.length);
@@ -148,6 +121,7 @@ export function HeroCarousel() {
   }, [next, isPaused, current]);
 
   const slide = slides[current];
+  if (!slide) return null;
 
   return (
     <section
@@ -176,37 +150,21 @@ export function HeroCarousel() {
             />
           </motion.div>
         </AnimatePresence>
-        {/* Gradient overlays — multi-layered for depth */}
-        <div
-          className={cn(
-            "absolute inset-0",
-            slide.align === "left" &&
-              "bg-gradient-to-r from-black/70 via-black/35 to-transparent",
-            slide.align === "right" &&
-              "bg-gradient-to-l from-black/70 via-black/35 to-transparent",
-            slide.align === "center" &&
-              "bg-gradient-to-b from-transparent via-black/35 to-black/65"
-          )}
-        />
+        {/* Gradient overlays — left-aligned text by default */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
         {/* Bottom fade for smooth transition into page */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
         {/* Subtle accent tint at edges */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse at ${slide.align === "right" ? "20%" : "80%"} 50%, transparent 40%, rgba(0,0,0,0.15) 100%)`,
+            background: `radial-gradient(ellipse at 80% 50%, transparent 40%, rgba(0,0,0,0.15) 100%)`,
           }}
         />
       </div>
 
       {/* Content */}
-      <div
-        className={cn(
-          "relative h-full mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 flex items-center",
-          slide.align === "right" && "justify-end",
-          slide.align === "center" && "justify-center text-center"
-        )}
-      >
+      <div className="relative h-full mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 flex items-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
@@ -214,10 +172,7 @@ export function HeroCarousel() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className={cn(
-              "max-w-xl text-white",
-              slide.align === "center" && "mx-auto"
-            )}
+            className="max-w-xl text-white"
           >
             <motion.p
               initial={{ opacity: 0 }}
@@ -246,22 +201,14 @@ export function HeroCarousel() {
               transition={{ delay: 0.9 }}
               className="flex flex-wrap gap-3 mt-9"
             >
-              <Button
-                size="lg"
-                onClick={slide.cta.action}
-                className="rounded-none bg-white text-black hover:bg-white/90 px-8 h-12 text-sm tracking-wide-luxe uppercase"
-              >
-                {slide.cta.label}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              {slide.ctaSecondary && (
+              {slide.ctaLabel && (
                 <Button
                   size="lg"
-                  variant="outline"
-                  onClick={slide.ctaSecondary.action}
-                  className="rounded-none bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white px-8 h-12 text-sm tracking-wide-luxe uppercase"
+                  onClick={resolveAction(slide.ctaLink)}
+                  className="rounded-none bg-white text-black hover:bg-white/90 px-8 h-12 text-sm tracking-wide-luxe uppercase"
                 >
-                  {slide.ctaSecondary.label}
+                  {slide.ctaLabel}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}
             </motion.div>
