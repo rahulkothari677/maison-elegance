@@ -298,17 +298,26 @@ function OverviewTab() {
   const [revenueByDay, setRevenueByDay] = useState<
     { date: string; label: string; revenue: number }[]
   >([]);
+  const [fullData, setFullData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/stats")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Stats API failed");
+        return r.json();
+      })
       .then((data) => {
+        setFullData(data);
         setStats(data.stats);
-        setRecentOrders(data.recentOrders);
-        setTopProducts(data.topProducts);
-        setOrdersByStatus(data.ordersByStatus);
-        setRevenueByDay(data.revenueByDay);
+        setRecentOrders(data.recentOrders || []);
+        setTopProducts(data.topProducts || []);
+        setOrdersByStatus(data.ordersByStatus || []);
+        setRevenueByDay(data.revenueByDay || []);
+      })
+      .catch(() => {
+        // API failed — set empty defaults so the page doesn't crash
+        setStats({ totalProducts: 0, totalOrders: 0, totalCustomers: 0, totalRevenue: 0, avgOrderValue: 0 });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -470,10 +479,10 @@ function OverviewTab() {
         {/* 30-day revenue trend */}
         <div className="border border-border rounded-sm p-6">
           <h3 className="font-serif text-xl mb-4">Revenue · Last 30 Days</h3>
-          {(data as any).revenueByDay30 && (
+          {fullData && (fullData as any).revenueByDay30 && (
             <div className="flex items-end gap-px h-32 overflow-x-auto">
-              {(data as any).revenueByDay30.map((d: any, i: number) => {
-                const max = Math.max(...(data as any).revenueByDay30.map((x: any) => x.revenue), 1);
+              {fullData && (fullData as any).revenueByDay30.map((d: any, i: number) => {
+                const max = Math.max(...(fullData as any).revenueByDay30.map((x: any) => x.revenue), 1);
                 return (
                   <div key={i} className="flex-1 min-w-[8px] flex flex-col items-center group relative">
                     <div className="w-full bg-accent/30 hover:bg-accent transition-colors rounded-t-sm" style={{ height: `${(d.revenue / max) * 100}%` }} />
@@ -496,8 +505,8 @@ function OverviewTab() {
           {/* Conversion funnel */}
           <div className="border border-border rounded-sm p-6">
             <h3 className="font-serif text-xl mb-4">Conversion Funnel</h3>
-            {(data as any).funnel && (() => {
-              const f = (data as any).funnel;
+            {fullData && (fullData as any).funnel && (() => {
+              const f = (fullData as any).funnel;
               const stages = [
                 { label: "Visitors", value: f.visitors, color: "bg-blue-400" },
                 { label: "Product Views", value: f.productViews, color: "bg-indigo-400" },
@@ -533,10 +542,10 @@ function OverviewTab() {
           {/* Sales by category */}
           <div className="border border-border rounded-sm p-6">
             <h3 className="font-serif text-xl mb-4">Revenue by Category</h3>
-            {(data as any).categoryRevenue && (data as any).categoryRevenue.length > 0 ? (
+            {fullData && (fullData as any).categoryRevenue && (fullData as any).categoryRevenue.length > 0 ? (
               <div className="space-y-3">
-                {(data as any).categoryRevenue.map((c: any) => {
-                  const max = Math.max(...(data as any).categoryRevenue.map((x: any) => x.revenue), 1);
+                {fullData && (fullData as any).categoryRevenue.map((c: any) => {
+                  const max = Math.max(...(fullData as any).categoryRevenue.map((x: any) => x.revenue), 1);
                   return (
                     <div key={c.category}>
                       <div className="flex items-center justify-between text-xs mb-1">
@@ -560,10 +569,10 @@ function OverviewTab() {
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="border border-border rounded-sm p-6">
             <h3 className="font-serif text-xl mb-4">Avg Order Value · 7 Days</h3>
-            {(data as any).aovByDay && (
+            {fullData && (fullData as any).aovByDay && (
               <div className="flex items-end gap-2 h-24">
-                {(data as any).aovByDay.map((d: any, i: number) => {
-                  const max = Math.max(...(data as any).aovByDay.map((x: any) => x.aov), 1);
+                {fullData && (fullData as any).aovByDay.map((d: any, i: number) => {
+                  const max = Math.max(...(fullData as any).aovByDay.map((x: any) => x.aov), 1);
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <span className="text-[10px] font-medium">${d.aov}</span>
@@ -580,14 +589,14 @@ function OverviewTab() {
 
           <div className="border border-border rounded-sm p-6">
             <h3 className="font-serif text-xl mb-4">Customer Cohorts</h3>
-            {(data as any).cohorts && (data as any).cohorts.length > 0 ? (
+            {fullData && (fullData as any).cohorts && (fullData as any).cohorts.length > 0 ? (
               <div className="space-y-2">
-                {(data as any).cohorts.map((c: any) => (
+                {fullData && (fullData as any).cohorts.map((c: any) => (
                   <div key={c.month} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
                     <span className="text-muted-foreground">{c.month}</span>
                     <div className="flex items-center gap-2">
                       <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-accent rounded-full" style={{ width: `${(c.count / Math.max(...(data as any).cohorts.map((x: any) => x.count))) * 100}%` }} />
+                        <div className="h-full bg-accent rounded-full" style={{ width: `${(c.count / Math.max(...(fullData as any).cohorts.map((x: any) => x.count), 1)) * 100}%` }} />
                       </div>
                       <span className="font-medium text-xs w-6 text-right">{c.count}</span>
                     </div>
