@@ -28,8 +28,34 @@ export const DEFAULT_THEME: ThemeSettings = {
   mutedForeground: "#75695a",
   border: "#e5dfd3",
   radius: "0.5rem",
-  fontSerif: "Playfair Display, Georgia, serif",
-  fontSans: "Inter, system-ui, sans-serif",
+  fontSerif: "'Playfair Display', Georgia, serif",
+  fontSans: "'Inter', system-ui, sans-serif",
+};
+
+// All available fonts — loaded via Google Fonts <link> in layout.tsx
+export const AVAILABLE_FONTS = {
+  serif: [
+    { name: "'Playfair Display', Georgia, serif", label: "Playfair Display", sample: "Elegant Luxury" },
+    { name: "'Cormorant Garamond', Georgia, serif", label: "Cormorant Garamond", sample: "Refined & Classic" },
+    { name: "'DM Serif Display', Georgia, serif", label: "DM Serif Display", sample: "Bold Modern" },
+    { name: "'Bodoni Moda', Georgia, serif", label: "Bodoni Moda", sample: "High Fashion" },
+    { name: "'Libre Bodoni', Georgia, serif", label: "Libre Bodoni", sample: "Editorial Vogue" },
+    { name: "'EB Garamond', Georgia, serif", label: "EB Garamond", sample: "Timeless Scholar" },
+    { name: "'Lora', Georgia, serif", label: "Lora", sample: "Warm Readable" },
+    { name: "'Crimson Pro', Georgia, serif", label: "Crimson Pro", sample: "Literary Grace" },
+    { name: "'Cormorant', Georgia, serif", label: "Cormorant", sample: "Delicate Airy" },
+    { name: "Georgia, serif", label: "Georgia (System)", sample: "Classic Web" },
+  ],
+  sans: [
+    { name: "'Inter', system-ui, sans-serif", label: "Inter", sample: "Clean Modern" },
+    { name: "'Montserrat', system-ui, sans-serif", label: "Montserrat", sample: "Geometric Bold" },
+    { name: "'Poppins', system-ui, sans-serif", label: "Poppins", sample: "Friendly Round" },
+    { name: "'Work Sans', system-ui, sans-serif", label: "Work Sans", sample: "Professional" },
+    { name: "'Manrope', system-ui, sans-serif", label: "Manrope", sample: "Contemporary" },
+    { name: "'Space Grotesk', system-ui, sans-serif", label: "Space Grotesk", sample: "Tech Minimal" },
+    { name: "'Jost', system-ui, sans-serif", label: "Jost", sample: "Bauhaus Inspired" },
+    { name: "system-ui, -apple-system, sans-serif", label: "System Default", sample: "Native OS" },
+  ],
 };
 
 export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
@@ -50,8 +76,8 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       mutedForeground: "#999999",
       border: "#2a2a2a",
       radius: "0.25rem",
-      fontSerif: "Playfair Display, Georgia, serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSerif: "'Playfair Display', Georgia, serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
   {
@@ -67,8 +93,8 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       mutedForeground: "#8a6b65",
       border: "#e8d0c8",
       radius: "0.75rem",
-      fontSerif: "Playfair Display, Georgia, serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSerif: "'Playfair Display', Georgia, serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
   {
@@ -84,8 +110,8 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       mutedForeground: "#5a6b50",
       border: "#c5d4bc",
       radius: "0.5rem",
-      fontSerif: "Playfair Display, Georgia, serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSerif: "'Playfair Display', Georgia, serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
   {
@@ -101,8 +127,8 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       mutedForeground: "#4a6578",
       border: "#bcd0de",
       radius: "0.5rem",
-      fontSerif: "Playfair Display, Georgia, serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSerif: "'Playfair Display', Georgia, serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
   {
@@ -118,8 +144,8 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       mutedForeground: "#6b5a78",
       border: "#d0bcd8",
       radius: "0.5rem",
-      fontSerif: "Playfair Display, Georgia, serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSerif: "'Playfair Display', Georgia, serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
   {
@@ -135,8 +161,8 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       mutedForeground: "#8a6b50",
       border: "#e0d0b8",
       radius: "0.375rem",
-      fontSerif: "Playfair Display, Georgia, serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSerif: "'Playfair Display', Georgia, serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
   {
@@ -153,7 +179,7 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
       border: "#e5e5e5",
       radius: "0px",
       fontSerif: "Inter, system-ui, sans-serif",
-      fontSans: "Inter, system-ui, sans-serif",
+      fontSans: "'Inter', system-ui, sans-serif",
     },
   },
 ];
@@ -162,6 +188,7 @@ export const PRESET_THEMES: { name: string; settings: ThemeSettings }[] = [
 // our CSS variables accept any valid CSS color)
 function applyTheme(settings: ThemeSettings) {
   const root = document.documentElement;
+  const body = document.body;
   root.style.setProperty("--primary", settings.primary);
   root.style.setProperty("--primary-foreground", settings.primaryForeground);
   root.style.setProperty("--accent", settings.accent);
@@ -172,8 +199,14 @@ function applyTheme(settings: ThemeSettings) {
   root.style.setProperty("--muted-foreground", settings.mutedForeground);
   root.style.setProperty("--border", settings.border);
   root.style.setProperty("--radius", settings.radius);
+  // Fonts — set on BOTH root and body because next/font sets them on body
   root.style.setProperty("--font-serif", settings.fontSerif);
   root.style.setProperty("--font-sans", settings.fontSans);
+  if (body) {
+    body.style.setProperty("--font-serif", settings.fontSerif);
+    body.style.setProperty("--font-sans", settings.fontSans);
+    body.style.fontFamily = settings.fontSans;
+  }
 }
 
 export function useActiveTheme() {

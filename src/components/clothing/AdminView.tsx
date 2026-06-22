@@ -53,6 +53,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ImageUploader } from "./ImageUploader";
 import { isClientAdminEmail } from "@/lib/client-admin";
+import { AVAILABLE_FONTS } from "@/lib/use-theme-settings";
 
 type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio";
 
@@ -2204,34 +2205,55 @@ function ThemeStudioTab() {
             </div>
           </div>
 
-          {/* Fonts */}
-          <div className="grid sm:grid-cols-2 gap-4 mb-6">
+          {/* Fonts — with live preview */}
+          <div className="space-y-4 mb-6">
             <div>
-              <Label className="text-xs mb-1.5 block">Heading Font (Serif)</Label>
+              <Label className="text-xs mb-2 block">Heading Font (Serif)</Label>
               <select
                 value={draft.fontSerif}
                 onChange={(e) => updateDraft("fontSerif", e.target.value)}
-                className="w-full h-10 px-3 rounded-sm border border-input bg-background text-sm"
+                className="w-full h-10 px-3 rounded-sm border border-input bg-background text-sm mb-2"
+                style={{ fontFamily: draft.fontSerif }}
               >
-                <option value="Playfair Display, Georgia, serif">Playfair Display (elegant)</option>
-                <option value="Georgia, serif">Georgia (classic)</option>
-                <option value="'Times New Roman', serif">Times New Roman</option>
-                <option value="Inter, system-ui, sans-serif">Inter (modern sans)</option>
-                <option value="'Courier New', monospace">Courier (mono)</option>
+                {AVAILABLE_FONTS.serif.map((f) => (
+                  <option key={f.name} value={f.name} style={{ fontFamily: f.name }}>
+                    {f.label}
+                  </option>
+                ))}
               </select>
+              {/* Font preview */}
+              <div className="border border-border rounded-sm p-3 bg-background" style={{ fontFamily: draft.fontSerif }}>
+                <p className="text-2xl font-bold" style={{ fontFamily: draft.fontSerif }}>
+                  MAISON ÉLÉGANCE
+                </p>
+                <p className="text-sm mt-1" style={{ fontFamily: draft.fontSerif }}>
+                  The Art of Quiet Luxury — handcrafted in Florence
+                </p>
+              </div>
             </div>
             <div>
-              <Label className="text-xs mb-1.5 block">Body Font (Sans)</Label>
+              <Label className="text-xs mb-2 block">Body Font (Sans)</Label>
               <select
                 value={draft.fontSans}
                 onChange={(e) => updateDraft("fontSans", e.target.value)}
-                className="w-full h-10 px-3 rounded-sm border border-input bg-background text-sm"
+                className="w-full h-10 px-3 rounded-sm border border-input bg-background text-sm mb-2"
+                style={{ fontFamily: draft.fontSans }}
               >
-                <option value="Inter, system-ui, sans-serif">Inter (clean)</option>
-                <option value="system-ui, -apple-system, sans-serif">System Default</option>
-                <option value="'Helvetica Neue', Arial, sans-serif">Helvetica</option>
-                <option value="Georgia, serif">Georgia (serif body)</option>
+                {AVAILABLE_FONTS.sans.map((f) => (
+                  <option key={f.name} value={f.name} style={{ fontFamily: f.name }}>
+                    {f.label}
+                  </option>
+                ))}
               </select>
+              {/* Font preview */}
+              <div className="border border-border rounded-sm p-3 bg-background" style={{ fontFamily: draft.fontSans }}>
+                <p className="text-base" style={{ fontFamily: draft.fontSans }}>
+                  This is how your body text will look. Crisp, readable, and perfectly suited for product descriptions, reviews, and checkout flows.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: draft.fontSans }}>
+                  Small print and metadata also use this font.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -2247,12 +2269,12 @@ function ThemeStudioTab() {
 }
 
 const PRESET_THEMES_LIST = [
-  { name: "Ivory Classic", settings: { primary: "#2c2418", primaryForeground: "#fbf7ed", accent: "#c19a45", accentForeground: "#2c2418", background: "#fbf7ed", foreground: "#2c2418", muted: "#f0ebe0", mutedForeground: "#75695a", border: "#e5dfd3", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Midnight Noir", settings: { primary: "#0d0d0d", primaryForeground: "#f5f5f0", accent: "#c19a45", accentForeground: "#0d0d0d", background: "#121212", foreground: "#f5f5f0", muted: "#1e1e1e", mutedForeground: "#999999", border: "#2a2a2a", radius: "0.25rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Rose Gold", settings: { primary: "#4a2c2a", primaryForeground: "#fdf5f0", accent: "#d4a5a5", accentForeground: "#4a2c2a", background: "#fdf5f0", foreground: "#4a2c2a", muted: "#f5e6e0", mutedForeground: "#8a6b65", border: "#e8d0c8", radius: "0.75rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Forest Sage", settings: { primary: "#1a2e1f", primaryForeground: "#f0f5ed", accent: "#7a9b6e", accentForeground: "#1a2e1f", background: "#f0f5ed", foreground: "#1a2e1f", muted: "#dfe8d8", mutedForeground: "#5a6b50", border: "#c5d4bc", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Ocean Blue", settings: { primary: "#0f2a3f", primaryForeground: "#eef4f8", accent: "#5b9bd5", accentForeground: "#0f2a3f", background: "#eef4f8", foreground: "#0f2a3f", muted: "#d8e5ee", mutedForeground: "#4a6578", border: "#bcd0de", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Royal Purple", settings: { primary: "#2d1b3d", primaryForeground: "#f5f0f8", accent: "#9b6dbf", accentForeground: "#2d1b3d", background: "#f5f0f8", foreground: "#2d1b3d", muted: "#e8d8f0", mutedForeground: "#6b5a78", border: "#d0bcd8", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Warm Terracotta", settings: { primary: "#3d2817", primaryForeground: "#faf3e8", accent: "#d4744a", accentForeground: "#faf3e8", background: "#faf3e8", foreground: "#3d2817", muted: "#f0e4d0", mutedForeground: "#8a6b50", border: "#e0d0b8", radius: "0.375rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
-  { name: "Sleek Minimal", settings: { primary: "#111111", primaryForeground: "#ffffff", accent: "#111111", accentForeground: "#ffffff", background: "#ffffff", foreground: "#111111", muted: "#f5f5f5", mutedForeground: "#888888", border: "#e5e5e5", radius: "0px", fontSerif: "Inter, system-ui, sans-serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Ivory Classic", settings: { primary: "#2c2418", primaryForeground: "#fbf7ed", accent: "#c19a45", accentForeground: "#2c2418", background: "#fbf7ed", foreground: "#2c2418", muted: "#f0ebe0", mutedForeground: "#75695a", border: "#e5dfd3", radius: "0.5rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Midnight Noir", settings: { primary: "#0d0d0d", primaryForeground: "#f5f5f0", accent: "#c19a45", accentForeground: "#0d0d0d", background: "#121212", foreground: "#f5f5f0", muted: "#1e1e1e", mutedForeground: "#999999", border: "#2a2a2a", radius: "0.25rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Rose Gold", settings: { primary: "#4a2c2a", primaryForeground: "#fdf5f0", accent: "#d4a5a5", accentForeground: "#4a2c2a", background: "#fdf5f0", foreground: "#4a2c2a", muted: "#f5e6e0", mutedForeground: "#8a6b65", border: "#e8d0c8", radius: "0.75rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Forest Sage", settings: { primary: "#1a2e1f", primaryForeground: "#f0f5ed", accent: "#7a9b6e", accentForeground: "#1a2e1f", background: "#f0f5ed", foreground: "#1a2e1f", muted: "#dfe8d8", mutedForeground: "#5a6b50", border: "#c5d4bc", radius: "0.5rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Ocean Blue", settings: { primary: "#0f2a3f", primaryForeground: "#eef4f8", accent: "#5b9bd5", accentForeground: "#0f2a3f", background: "#eef4f8", foreground: "#0f2a3f", muted: "#d8e5ee", mutedForeground: "#4a6578", border: "#bcd0de", radius: "0.5rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Royal Purple", settings: { primary: "#2d1b3d", primaryForeground: "#f5f0f8", accent: "#9b6dbf", accentForeground: "#2d1b3d", background: "#f5f0f8", foreground: "#2d1b3d", muted: "#e8d8f0", mutedForeground: "#6b5a78", border: "#d0bcd8", radius: "0.5rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Warm Terracotta", settings: { primary: "#3d2817", primaryForeground: "#faf3e8", accent: "#d4744a", accentForeground: "#faf3e8", background: "#faf3e8", foreground: "#3d2817", muted: "#f0e4d0", mutedForeground: "#8a6b50", border: "#e0d0b8", radius: "0.375rem", fontSerif: "'Playfair Display', Georgia, serif", fontSans: "'Inter', system-ui, sans-serif" } },
+  { name: "Sleek Minimal", settings: { primary: "#111111", primaryForeground: "#ffffff", accent: "#111111", accentForeground: "#ffffff", background: "#ffffff", foreground: "#111111", muted: "#f5f5f5", mutedForeground: "#888888", border: "#e5e5e5", radius: "0px", fontSerif: "'Inter', system-ui, sans-serif", fontSans: "'Inter', system-ui, sans-serif" } },
 ];

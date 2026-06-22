@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./ProductCard";
 import { FlashSaleSection } from "./FlashSale";
+import { HeroCarousel } from "./HeroCarousel";
 import { useRef } from "react";
 
 const fadeUp = {
@@ -58,62 +59,8 @@ export function HomeView() {
 
   return (
     <motion.div initial="hidden" animate="show" variants={stagger}>
-      {/* HERO */}
-      <section className="relative h-[88vh] min-h-[600px] overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={heroImages.primary}
-            alt="MAISON ÉLÉGANCE Autumn Winter 2026"
-            className="w-full h-full object-cover animate-kenburns"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/30 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        </div>
-
-        <div className="relative h-full mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 flex items-center">
-          <motion.div
-            variants={fadeUp}
-            className="max-w-xl text-white"
-          >
-            <p className="text-[11px] tracking-luxe uppercase text-white/80 mb-5">
-              Autumn / Winter 2026
-            </p>
-            <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[1.05] text-balance">
-              The Art of<br />Quiet Luxury.
-            </h1>
-            <p className="text-white/85 mt-6 text-lg leading-relaxed max-w-md text-pretty">
-              Handcrafted pieces from the world's finest ateliers. Materials
-              sourced with intention, constructed to outlast trends.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-9">
-              <Button
-                size="lg"
-                onClick={() => {
-                  setCategory("All");
-                  setView("shop");
-                }}
-                className="rounded-none bg-white text-black hover:bg-white/90 px-8 h-12 text-sm tracking-wide-luxe uppercase"
-              >
-                Explore Collection
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => openProduct(heroFeatured.id)}
-                className="rounded-none bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white px-8 h-12 text-sm tracking-wide-luxe uppercase"
-              >
-                Featured Piece
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-[10px] tracking-luxe uppercase animate-bounce">
-          Scroll to Discover
-        </div>
-      </section>
+      {/* HERO CAROUSEL — multiple images with dynamic transitions */}
+      <HeroCarousel />
 
       {/* Trust badges */}
       <motion.section
@@ -139,6 +86,36 @@ export function HomeView() {
           </div>
         </div>
       </motion.section>
+
+      {/* ANIMATED STATS */}
+      <section className="bg-primary text-primary-foreground py-12">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+            {[
+              { value: "39", suffix: " yrs", label: "Of Craftsmanship" },
+              { value: "8", suffix: "", label: "Master Ateliers" },
+              { value: "100", suffix: "%", label: "Hand-Finished" },
+              { value: "12K", suffix: "+", label: "Happy Clients" },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <p className="font-serif text-4xl lg:text-5xl text-accent">
+                  {stat.value}
+                  <span className="text-2xl">{stat.suffix}</span>
+                </p>
+                <p className="text-[11px] tracking-wide-luxe uppercase text-primary-foreground/60 mt-2">
+                  {stat.label}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Categories grid */}
       <section className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-20 lg:py-28">
@@ -636,6 +613,71 @@ export function HomeView() {
           </div>
         </section>
       )}
+
+      {/* LIFESTYLE GRID — Instagram-style visual mosaic */}
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-16 lg:py-20">
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="text-center mb-10"
+          >
+            <p className="text-[11px] tracking-luxe uppercase text-accent mb-3">
+              @maison.elegance
+            </p>
+            <h2 className="font-serif text-3xl lg:text-4xl">Follow Our World</h2>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Behind the seams — atelier visits, new arrivals, and styling inspiration
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+            {[
+              "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1485231183935-fffde7cc051e?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=400&q=80",
+              "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=400&q=80",
+            ].map((img, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: (i % 6) * 0.05 }}
+                className="aspect-square overflow-hidden rounded-sm group cursor-pointer relative"
+              >
+                <img
+                  src={img}
+                  alt={`Lifestyle ${i + 1}`}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 text-white text-xs tracking-wide-luxe uppercase transition-opacity">
+                    View
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          <div className="text-center mt-6">
+            <Button
+              variant="outline"
+              className="rounded-none h-11 px-6 text-sm tracking-wide-luxe uppercase"
+            >
+              Follow @maison.elegance
+            </Button>
+          </div>
+        </div>
+      </section>
 
       {/* Final CTA */}
       <motion.section
