@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Heart,
@@ -20,12 +20,13 @@ import {
   Star,
   Search,
   Bell,
+  Loader2,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCurrency } from "@/lib/use-currency";
 import { playSound } from "@/lib/sound";
-import { getProductById, products } from "@/lib/data";
-import type { SizeOption } from "@/lib/data";
+import { getProductById, products as staticProducts } from "@/lib/data";
+import type { SizeOption, Product } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,68 @@ export function ProductView() {
   } = useStore();
   const { convert, currency } = useCurrency();
 
-  const product = selectedProductId ? getProductById(selectedProductId) : null;
+  // Try static first (instant render for seeded products), then fetch from API
+  // for admin-added products that aren't in the static file.
+  const [product, setProduct] = useState<Product | null>(
+    selectedProductId ? getProductById(selectedProductId) : null
+  );
+  const [loading, setLoading] = useState(!product && !!selectedProductId);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (!selectedProductId) {
+      setProduct(null);
+      return;
+    }
+
+    // 1. Try static first (instant)
+    const staticProduct = getProductById(selectedProductId);
+    if (staticProduct) {
+      setProduct(staticProduct);
+      setLoading(false);
+      // Still fetch related from API to mix admin-added products in
+      fetchRelated(staticProduct);
+      return;
+    }
+
+    // 2. Static not found — fetch from API (admin-added product)
+    setLoading(true);
+    fetch(`/api/products/${selectedProductId}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      })
+      .then((data) => {
+        if (data.product) {
+          // Normalize API product to match Product type
+          const p = data.product as Product;
+          setProduct(p);
+          fetchRelated(p);
+        } else {
+          setProduct(null);
+        }
+      })
+      .catch(() => setProduct(null))
+      .finally(() => setLoading(false));
+
+    function fetchRelated(p: Product) {
+      fetch(`/api/products?sort=featured`)
+        .then((r) => (r.ok ? r.json() : { products: [] }))
+        .then((data) => {
+          if (Array.isArray(data.products)) {
+            const related = data.products
+              .filter(
+                (rp: Product) => rp.id !== p.id && rp.category === p.category
+              )
+              .slice(0, 4);
+            setRelatedProducts(related);
+          }
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProductId]);
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<SizeOption | null>(null);
   const [selectedColor, setSelectedColor] = useState<string>(
@@ -56,6 +118,23 @@ export function ProductView() {
   );
   const [quantity, setQuantity] = useState(1);
   const [sizeError, setSizeError] = useState(false);
+
+  // Reset image/size/color when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+    setSelectedSize(null);
+    setSelectedColor(product?.colors[0]?.name || "");
+    setQuantity(1);
+  }, [product?.id]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-32">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-accent" />
+        <p className="font-serif text-lg mt-4 text-muted-foreground">Loading product...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -69,13 +148,15 @@ export function ProductView() {
   }
 
   const isWishlisted = wishlist.includes(product.id);
-  const related = products
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .slice(0, 4);
+  const related = relatedProducts.length > 0
+    ? relatedProducts
+    : staticProducts
+        .filter((p) => p.id !== product.id && p.category === product.category)
+        .slice(0, 4);
 
   // "Complete the Look" — pick coordinating items from OTHER categories
   // e.g. if viewing a coat, suggest trousers + shoes + bag
-  const completeTheLook = products
+  const completeTheLook = (relatedProducts.length > 0 ? relatedProducts : staticProducts)
     .filter(
       (p) =>
         p.id !== product.id &&

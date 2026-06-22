@@ -12,10 +12,11 @@ import {
   Ruler,
   Minus,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getProductById } from "@/lib/data";
-import type { SizeOption } from "@/lib/data";
+import type { SizeOption, Product } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,35 @@ export function QuickView() {
     setQuickViewProduct,
   } = useStore();
 
-  const product = quickViewProductId ? getProductById(quickViewProductId) : null;
+  // Try static first (instant for seeded products), then fetch from API
+  // for admin-added products not in the static file.
+  const [product, setProduct] = useState<Product | null>(
+    quickViewProductId ? getProductById(quickViewProductId) : null
+  );
+  const [loading, setLoading] = useState(!product && !!quickViewProductId);
+
+  useEffect(() => {
+    if (!quickViewProductId) {
+      setProduct(null);
+      setLoading(false);
+      return;
+    }
+    const staticProduct = getProductById(quickViewProductId);
+    if (staticProduct) {
+      setProduct(staticProduct);
+      setLoading(false);
+      return;
+    }
+    // Fetch from API
+    setLoading(true);
+    fetch(`/api/products/${quickViewProductId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        setProduct(data?.product || null);
+      })
+      .catch(() => setProduct(null))
+      .finally(() => setLoading(false));
+  }, [quickViewProductId]);
 
   // Lock body scroll
   useEffect(() => {
@@ -42,6 +71,17 @@ export function QuickView() {
 
   return (
     <AnimatePresence>
+      {loading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setQuickViewProduct(null)}
+        >
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        </motion.div>
+      )}
       {product && (
         <QuickViewContent
           key={product.id}
@@ -57,7 +97,7 @@ function QuickViewContent({
   product,
   onClose,
 }: {
-  product: NonNullable<ReturnType<typeof getProductById>>;
+  product: Product;
   onClose: () => void;
 }) {
   const { addToCart, toggleWishlist, wishlist, openProduct } = useStore();
