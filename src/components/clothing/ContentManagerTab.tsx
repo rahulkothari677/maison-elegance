@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Save, RotateCcw, Loader2, Plus, Trash2, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -203,7 +203,7 @@ function SingleImageInput({
   onChange: (url: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
-  const fileRef = useState<HTMLInputElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -252,7 +252,7 @@ function SingleImageInput({
               variant="outline"
               size="sm"
               disabled={uploading}
-              onClick={() => (fileRef[0] as any)?.click()}
+              onClick={() => fileRef.current?.click()}
             >
               {uploading ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -263,7 +263,7 @@ function SingleImageInput({
             </Button>
           </div>
           <input
-            ref={fileRef[0] as any}
+            ref={fileRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
             onChange={(e) => handleFile(e.target.files)}
