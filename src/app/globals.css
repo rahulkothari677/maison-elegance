@@ -240,3 +240,119 @@
 .animate-kenburns {
   animation: kenburns 18s ease-in-out infinite alternate;
 }
+
+/* ─── TIER 3: PREMIUM ANIMATIONS ─────────────────────────────────────────── */
+
+/* C3: Heart burst animation */
+@keyframes heart-burst {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.4); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.animate-heart-burst {
+  animation: heart-burst 0.5s ease-out;
+}
+
+/* C3: Cart bounce animation */
+@keyframes cart-bounce {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-8px) scale(1.15); }
+  60% { transform: translateY(0) scale(0.95); }
+  100% { transform: translateY(0) scale(1); }
+}
+.animate-cart-bounce {
+  animation: cart-bounce 0.5s ease-out;
+}
+
+/* C3: Button ripple */
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(4); opacity: 0; }
+}
+.animate-ripple {
+  animation: ripple 0.6s ease-out;
+}
+
+/* C3: Slide-up toast entrance */
+@keyframes slide-up-fade {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* C3: Scale-in for modals */
+@keyframes scale-in-luxe {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-scale-in-luxe {
+  animation: scale-in-luxe 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* C4: Gold thread loading — draws a thread across */
+@keyframes thread-draw {
+  0% { width: 0; opacity: 0; }
+  30% { opacity: 1; }
+  100% { width: 100%; opacity: 1; }
+}
+.animate-thread-draw {
+  animation: thread-draw 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* C4: Logo fade for loading */
+@keyframes logo-fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-logo-fade {
+  animation: logo-fade-in 0.6s ease-out forwards;
+}
+
+/* C2: Scroll reveal — word by word */
+@keyframes word-reveal {
+  0% { opacity: 0; transform: translateY(15px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* C2: Image parallax float */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+/* C2: Fade in up on scroll */
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* C5: Custom cursor states */
+.cursor-grab { cursor: grab; }
+.cursor-grab:active { cursor: grabbing; }
+.cursor-zoom-in { cursor: zoom-in; }
+
+/* C3: Badge pop */
+@keyframes badge-pop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.animate-badge-pop {
+  animation: badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* C2: Smooth section divider gradient */
+.section-divider-top {
+  background: linear-gradient(180deg, var(--muted) 0%, transparent 100%);
+  height: 40px;
+}
+.section-divider-bottom {
+  background: linear-gradient(180deg, transparent 0%, var(--muted) 100%);
+  height: 40px;
+}

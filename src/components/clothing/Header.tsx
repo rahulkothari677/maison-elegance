@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import {
   ShoppingBag,
@@ -48,6 +49,7 @@ export function Header() {
     view,
     setCartDrawerOpen,
     setProfileTab,
+    cartBounce,
   } = useStore();
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -505,7 +507,13 @@ export function Header() {
                 aria-label="Cart"
                 className="relative"
               >
-                <ShoppingBag className="h-[18px] w-[18px]" />
+                <motion.div
+                  key={cartBounce}
+                  animate={cartBounce > 0 ? { scale: [1, 1.3, 0.9, 1.1, 1], y: [0, -6, 0, -2, 0] } : {}}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  <ShoppingBag className="h-[18px] w-[18px]" />
+                </motion.div>
                 {count > 0 && (
                   <span className="absolute top-1 right-1 bg-accent text-accent-foreground text-[10px] font-medium min-w-[16px] h-4 rounded-full flex items-center justify-center px-1">
                     {count}

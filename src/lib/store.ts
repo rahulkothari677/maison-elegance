@@ -106,6 +106,10 @@ export type AppState = {
   lastViewedProductIds: string[];
   lastOrderId: string | null;
 
+  // Animation triggers (for micro-interactions)
+  cartBounce: number;
+  triggerCartBounce: () => void;
+
   // Compare tray (up to 4 products)
   compareIds: string[];
   toggleCompare: (productId: string) => void;
@@ -335,6 +339,10 @@ export const useStore = create<AppState>()(
       lastViewedProductIds: [],
       lastOrderId: null,
 
+      // Animation triggers
+      cartBounce: 0,
+      triggerCartBounce: () => set((state) => ({ cartBounce: state.cartBounce + 1 })),
+
       // Compare tray (up to 4 products)
       compareIds: [],
       toggleCompare: (productId) =>
@@ -441,6 +449,7 @@ export const useStore = create<AppState>()(
           return {
             cart: newCart,
             cartDrawerOpen: true,
+            cartBounce: state.cartBounce + 1,
           };
         }),
       removeFromCart: (productId, size, color) =>

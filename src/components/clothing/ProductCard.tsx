@@ -35,8 +35,14 @@ export function ProductCard({ product }: { product: Product }) {
 
   const isComparing = compareIds.includes(product.id);
 
+  const [heartBurst, setHeartBurst] = useState(false);
+
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isWishlisted) {
+      setHeartBurst(true);
+      setTimeout(() => setHeartBurst(false), 500);
+    }
     if (isAuthenticated) {
       toggleApiWishlist(product.id);
     } else {
@@ -106,7 +112,7 @@ export function ProductCard({ product }: { product: Product }) {
               : "bg-background/90 text-foreground hover:bg-background"
           )}
         >
-          <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+          <Heart className={cn("h-4 w-4", isWishlisted && "fill-current", heartBurst && "animate-heart-burst")} />
         </button>
 
         {/* Quick view + Compare buttons (top-left, appears on hover) */}

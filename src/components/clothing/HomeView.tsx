@@ -299,15 +299,19 @@ export function HomeView() {
               variants={fadeUp}
               className="order-1 lg:order-2 grid grid-cols-2 gap-4"
             >
-              <img
+              <motion.img
                 src={collectionLeft.images[0]}
                 alt={collectionLeft.name}
                 className="w-full aspect-[3/4] object-cover rounded-sm"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               />
-              <img
+              <motion.img
                 src={collectionRight.images[0]}
                 alt={collectionRight.name}
                 className="w-full aspect-[3/4] object-cover rounded-sm mt-8"
+                animate={{ y: [0, -12, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               />
             </motion.div>
           </div>

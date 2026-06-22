@@ -19,8 +19,17 @@ import { BackToTop } from "@/components/clothing/BackToTop";
 import { ConciergeChat } from "@/components/clothing/ConciergeChat";
 import { CompareTray, CompareModal } from "@/components/clothing/CompareTray";
 import { AdminView } from "@/components/clothing/AdminView";
+import { LoadingCinematic } from "@/components/clothing/LoadingCinematic";
+import { CustomCursor } from "@/components/clothing/CustomCursor";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
+
+const pageTransitions = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
+};
 
 export default function Home() {
   const { view, setProfileTab } = useStore();
@@ -40,15 +49,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <LoadingCinematic />
+      <CustomCursor />
       <Header />
       <main className="flex-1">
         <AnimatePresence mode="wait">
           <motion.div
             key={effectiveView}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            {...pageTransitions}
           >
             {effectiveView === "home" && <HomeView />}
             {effectiveView === "shop" && <ShopView />}
