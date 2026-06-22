@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "./ProductCard";
 import { ProductReviews } from "./ProductReviews";
+import { ProductQnA } from "./ProductQnA";
 import { SizeFinder } from "./SizeFinder";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -470,6 +471,7 @@ export function ProductView() {
               ["care", "Care"],
               ["sustainability", "Sustainability"],
               ["reviews", `Reviews (${product.reviewCount})`],
+              ["qna", "Q&A"],
             ].map(([val, label]) => (
               <TabsTrigger
                 key={val}
@@ -625,6 +627,10 @@ export function ProductView() {
 
           <TabsContent value="reviews" className="mt-10">
             <ProductReviews slug={product.id} />
+          </TabsContent>
+
+          <TabsContent value="qna" className="mt-10">
+            <ProductQnA slug={product.id} />
           </TabsContent>
         </Tabs>
       </div>
