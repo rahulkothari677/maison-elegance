@@ -72,3 +72,4 @@ worklog.md
 examples/
 mini-services/.gitkeep
 *.pid
+tool-results/

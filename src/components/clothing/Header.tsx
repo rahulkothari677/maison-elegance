@@ -16,6 +16,7 @@ import {
   Crown,
   Home,
   Sparkles,
+  Award,
 } from "lucide-react";
 import { useStore, cartCount } from "@/lib/store";
 import { products, categories } from "@/lib/data";
@@ -349,25 +350,109 @@ export function Header() {
                       <div className="h-px bg-border my-4" />
                       {isAuthenticated ? (
                         <>
+                          <div className="px-2 mb-2">
+                            <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                              Account
+                            </p>
+                            <p className="text-sm font-medium truncate mt-0.5">
+                              {userName}
+                            </p>
+                            {(session.user as any)?.tier && (
+                              <p className="text-[10px] tracking-wide-luxe uppercase text-accent mt-0.5">
+                                {(session.user as any).tier} Member
+                              </p>
+                            )}
+                          </div>
                           <button
                             onClick={() => {
                               setView("profile");
+                              setProfileTab("overview");
                               setMobileOpen(false);
+                              if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
                             className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
                           >
-                            <span className="text-lg font-serif">My Account</span>
-                            <User className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            <span className="text-lg font-serif inline-flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              My Profile
+                            </span>
+                            <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                           </button>
+                          <button
+                            onClick={() => {
+                              setView("profile");
+                              setProfileTab("orders");
+                              setMobileOpen(false);
+                              if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                          >
+                            <span className="text-lg font-serif inline-flex items-center gap-2">
+                              <ShoppingBag className="h-4 w-4" />
+                              My Orders
+                            </span>
+                            <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setView("wishlist");
+                              setMobileOpen(false);
+                              if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                          >
+                            <span className="text-lg font-serif inline-flex items-center gap-2">
+                              <Heart className="h-4 w-4" />
+                              Wishlist
+                            </span>
+                            <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setView("profile");
+                              setProfileTab("loyalty");
+                              setMobileOpen(false);
+                              if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                          >
+                            <span className="text-lg font-serif inline-flex items-center gap-2">
+                              <Award className="h-4 w-4 text-accent" />
+                              Loyalty & Points
+                            </span>
+                            <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                          </button>
+                          {((session.user as any)?.isAdmin || isClientAdminEmail(session?.user?.email)) && (
+                            <>
+                              <div className="h-px bg-border my-3" />
+                              <button
+                                onClick={() => {
+                                  setView("admin");
+                                  setMobileOpen(false);
+                                  if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                                }}
+                                className="w-full flex items-center justify-between py-3 text-left text-accent hover:text-accent transition-colors group"
+                              >
+                                <span className="text-lg font-serif inline-flex items-center gap-2">
+                                  <Crown className="h-4 w-4" />
+                                  Admin Dashboard
+                                </span>
+                                <ChevronRight className="h-4 w-4 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                              </button>
+                            </>
+                          )}
+                          <div className="h-px bg-border my-3" />
                           <button
                             onClick={() => {
                               handleSignOut();
                               setMobileOpen(false);
                             }}
-                            className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                            className="w-full flex items-center justify-between py-3 text-left hover:text-destructive transition-colors group"
                           >
-                            <span className="text-lg font-serif">Sign Out</span>
-                            <LogOut className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            <span className="text-lg font-serif inline-flex items-center gap-2">
+                              <LogOut className="h-4 w-4" />
+                              Sign Out
+                            </span>
                           </button>
                         </>
                       ) : (
@@ -378,8 +463,11 @@ export function Header() {
                           }}
                           className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
                         >
-                          <span className="text-lg font-serif">Sign In</span>
-                          <User className="h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity" />
+                          <span className="text-lg font-serif inline-flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Sign In / Register
+                          </span>
+                          <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                         </button>
                       )}
                     </nav>
@@ -445,7 +533,7 @@ export function Header() {
                       variant="ghost"
                       size="icon"
                       aria-label="Account menu"
-                      className="hidden sm:inline-flex"
+                      className="inline-flex"
                     >
                       {session?.user?.image ? (
                         <img
@@ -522,7 +610,7 @@ export function Header() {
                   size="icon"
                   onClick={() => openAuth("signin")}
                   aria-label="Sign in"
-                  className="hidden sm:inline-flex"
+                  className="inline-flex"
                 >
                   <User className="h-[18px] w-[18px]" />
                 </Button>
