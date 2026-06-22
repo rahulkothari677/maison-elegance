@@ -73,20 +73,41 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const debugInfo: any = { step: "start" };
+
   try {
     const body = await req.json();
+    debugInfo.step = "parsed-body";
     const sections = body.sections;
     if (!sections || typeof sections !== "object") {
       return NextResponse.json(
-        { error: "Body must include 'sections' object" },
+        { error: "Body must include 'sections' object", debug: debugInfo },
         { status: 400 }
       );
     }
 
     // Auto-create the table if it doesn't exist yet (self-healing)
-    await ensureSiteContentTable();
+    debugInfo.step = "ensuring-table";
+    const tableResult = await ensureSiteContentTable();
+    debugInfo.tableCreated = tableResult.created;
+    debugInfo.tableError = tableResult.error;
 
+    if (tableResult.error) {
+      // Table creation failed — return detailed error so we can debug
+      return NextResponse.json(
+        {
+          error: "Could not create or access the SiteContent table. " + tableResult.error,
+          debug: debugInfo,
+        },
+        { status: 500 }
+      );
+    }
+
+    debugInfo.step = "upserting";
+    debugInfo.sections = Object.keys(sections);
     const updated: string[] = [];
+    const errors: string[] = [];
+
     for (const [section, data] of Object.entries(sections)) {
       if (!DEFAULTS[section]) {
         // Skip unknown sections to prevent abuse
@@ -105,29 +126,44 @@ export async function PUT(req: NextRequest) {
         });
         updated.push(section);
       } catch (upsertErr: any) {
-        // If the table doesn't exist yet, the upsert will fail.
-        // Re-throw with a helpful message so admin knows to run migration.
-        if (
-          upsertErr?.message?.includes("no such table") ||
-          upsertErr?.message?.includes("does not exist") ||
-          upsertErr?.message?.includes("SiteContent")
-        ) {
-          throw new Error(
-            "SiteContent table not found in database. Run 'npx prisma db push' on your Turso database to apply the new schema."
-          );
+        // Try one more time after re-ensuring the table
+        try {
+          await ensureSiteContentTable();
+          await db.siteContent.upsert({
+            where: { section },
+            create: { section, data: JSON.stringify(data) },
+            update: { data: JSON.stringify(data) },
+          });
+          updated.push(section);
+        } catch (retryErr: any) {
+          errors.push(`${section}: ${retryErr?.message || upsertErr?.message || "unknown"}`);
         }
-        throw upsertErr;
       }
+    }
+
+    if (errors.length > 0 && updated.length === 0) {
+      // All saves failed
+      return NextResponse.json(
+        {
+          error: "Failed to save. Errors: " + errors.join("; "),
+          debug: { ...debugInfo, errors },
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       ok: true,
       updated,
+      errors: errors.length > 0 ? errors : undefined,
       message: `Saved ${updated.length} section${updated.length === 1 ? "" : "s"}`,
     });
   } catch (e: any) {
     return NextResponse.json(
-      { error: e.message || "Failed to save content" },
+      {
+        error: e.message || "Failed to save content",
+        debug: { ...debugInfo, stack: e?.stack?.split("\n").slice(0, 5) },
+      },
       { status: 500 }
     );
   }
