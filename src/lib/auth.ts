@@ -1,6 +1,9 @@
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import FacebookProvider from "next-auth/providers/facebook";
+import AppleProvider from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
@@ -64,6 +67,30 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    // Social login providers — uncomment/add env vars to enable
+    // Google: requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET in .env
+    ...(process.env.GOOGLE_CLIENT_ID
+      ? [GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        })]
+      : []),
+    // Facebook: requires FACEBOOK_CLIENT_ID + FACEBOOK_CLIENT_SECRET in .env
+    ...(process.env.FACEBOOK_CLIENT_ID
+      ? [FacebookProvider({
+          clientId: process.env.FACEBOOK_CLIENT_ID!,
+          clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+        })]
+      : []),
+    // Apple: requires APPLE_CLIENT_ID + APPLE_TEAM_ID + APPLE_KEY_ID + APPLE_PRIVATE_KEY in .env
+    ...(process.env.APPLE_CLIENT_ID
+      ? [AppleProvider({
+          clientId: process.env.APPLE_CLIENT_ID!,
+          teamId: process.env.APPLE_TEAM_ID!,
+          keyId: process.env.APPLE_KEY_ID!,
+          privateKey: process.env.APPLE_PRIVATE_KEY!,
+        })]
+      : []),
   ],
   pages: {
     signIn: "/",

@@ -26,6 +26,7 @@ import {
   ChevronRight,
   ChevronDown,
   Folder,
+  Palette,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useStore } from "@/lib/store";
@@ -50,8 +51,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ImageUploader } from "./ImageUploader";
 
-type AdminTab = "overview" | "products" | "orders" | "customers" | "categories";
+type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio";
 
 type Stats = {
   totalProducts: number;
@@ -225,6 +227,7 @@ export function AdminView() {
             ["orders", "Orders", ShoppingCart],
             ["customers", "Customers", Users],
             ["categories", "Categories", FolderTree],
+            ["themestudio", "Theme Studio", Palette],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -276,6 +279,7 @@ export function AdminView() {
         {tab === "orders" && <OrdersTab />}
         {tab === "customers" && <CustomersTab />}
         {tab === "categories" && <CategoriesTab />}
+        {tab === "themestudio" && <ThemeStudioTab />}
       </motion.div>
     </div>
   );
@@ -455,6 +459,142 @@ function OverviewTab() {
             ))}
             {topProducts.length === 0 && (
               <p className="text-sm text-muted-foreground">No sales yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Analytics */}
+      <div className="space-y-6">
+        {/* 30-day revenue trend */}
+        <div className="border border-border rounded-sm p-6">
+          <h3 className="font-serif text-xl mb-4">Revenue · Last 30 Days</h3>
+          {(data as any).revenueByDay30 && (
+            <div className="flex items-end gap-px h-32 overflow-x-auto">
+              {(data as any).revenueByDay30.map((d: any, i: number) => {
+                const max = Math.max(...(data as any).revenueByDay30.map((x: any) => x.revenue), 1);
+                return (
+                  <div key={i} className="flex-1 min-w-[8px] flex flex-col items-center group relative">
+                    <div className="w-full bg-accent/30 hover:bg-accent transition-colors rounded-t-sm" style={{ height: `${(d.revenue / max) * 100}%` }} />
+                    {d.revenue > 0 && (
+                      <div className="absolute -top-6 opacity-0 group-hover:opacity-100 bg-background border border-border rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap z-10">
+                        ${d.revenue}
+                      </div>
+                    )}
+                    {i % 5 === 0 && (
+                      <span className="text-[8px] text-muted-foreground mt-1 rotate-45">{d.label}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Conversion funnel */}
+          <div className="border border-border rounded-sm p-6">
+            <h3 className="font-serif text-xl mb-4">Conversion Funnel</h3>
+            {(data as any).funnel && (() => {
+              const f = (data as any).funnel;
+              const stages = [
+                { label: "Visitors", value: f.visitors, color: "bg-blue-400" },
+                { label: "Product Views", value: f.productViews, color: "bg-indigo-400" },
+                { label: "Cart Adds", value: f.cartAdds, color: "bg-purple-400" },
+                { label: "Checkouts", value: f.checkouts, color: "bg-amber-400" },
+                { label: "Purchases", value: f.purchases, color: "bg-green-500" },
+              ];
+              const max = stages[0].value;
+              return (
+                <div className="space-y-3">
+                  {stages.map((s, i) => {
+                    const pct = (s.value / max) * 100;
+                    const convRate = i > 0 ? ((s.value / stages[i - 1].value) * 100).toFixed(1) : "100";
+                    return (
+                      <div key={s.label}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-medium">{s.label}</span>
+                          <span className="text-muted-foreground">
+                            {s.value} ({convRate}%)
+                          </span>
+                        </div>
+                        <div className="h-7 bg-muted rounded-sm overflow-hidden">
+                          <div className={cn("h-full rounded-sm transition-all", s.color)} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Sales by category */}
+          <div className="border border-border rounded-sm p-6">
+            <h3 className="font-serif text-xl mb-4">Revenue by Category</h3>
+            {(data as any).categoryRevenue && (data as any).categoryRevenue.length > 0 ? (
+              <div className="space-y-3">
+                {(data as any).categoryRevenue.map((c: any) => {
+                  const max = Math.max(...(data as any).categoryRevenue.map((x: any) => x.revenue), 1);
+                  return (
+                    <div key={c.category}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-medium">{c.category}</span>
+                        <span className="text-muted-foreground">${c.revenue.toLocaleString()}</span>
+                      </div>
+                      <div className="h-5 bg-muted rounded-sm overflow-hidden">
+                        <div className="h-full bg-accent rounded-sm" style={{ width: `${(c.revenue / max) * 100}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No sales data yet.</p>
+            )}
+          </div>
+        </div>
+
+        {/* AOV trend + customer cohorts */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="border border-border rounded-sm p-6">
+            <h3 className="font-serif text-xl mb-4">Avg Order Value · 7 Days</h3>
+            {(data as any).aovByDay && (
+              <div className="flex items-end gap-2 h-24">
+                {(data as any).aovByDay.map((d: any, i: number) => {
+                  const max = Math.max(...(data as any).aovByDay.map((x: any) => x.aov), 1);
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-medium">${d.aov}</span>
+                      <div className="w-full bg-muted rounded-t-sm overflow-hidden flex-1 flex items-end">
+                        <div className="w-full bg-accent/60 rounded-t-sm" style={{ height: `${(d.aov / max) * 100}%` }} />
+                      </div>
+                      <span className="text-[9px] text-muted-foreground">{d.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="border border-border rounded-sm p-6">
+            <h3 className="font-serif text-xl mb-4">Customer Cohorts</h3>
+            {(data as any).cohorts && (data as any).cohorts.length > 0 ? (
+              <div className="space-y-2">
+                {(data as any).cohorts.map((c: any) => (
+                  <div key={c.month} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
+                    <span className="text-muted-foreground">{c.month}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-accent rounded-full" style={{ width: `${(c.count / Math.max(...(data as any).cohorts.map((x: any) => x.count))) * 100}%` }} />
+                      </div>
+                      <span className="font-medium text-xs w-6 text-right">{c.count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No customers yet.</p>
             )}
           </div>
         </div>
@@ -1178,14 +1318,10 @@ function ProductDialog({
           </div>
 
           <div>
-            <Label className="text-xs mb-1.5 block">
-              Image URLs (one per line)
-            </Label>
-            <Textarea
-              value={form.images}
-              onChange={(e) => setForm({ ...form, images: e.target.value })}
-              placeholder="https://images.unsplash.com/photo-..."
-              className="rounded-sm font-mono text-xs min-h-[80px]"
+            <Label className="text-xs mb-1.5 block">Product Images</Label>
+            <ImageUploader
+              images={form.images ? form.images.split("\n").filter(Boolean) : []}
+              onChange={(imgs) => setForm({ ...form, images: imgs.join("\n") })}
             />
           </div>
 
@@ -1798,3 +1934,315 @@ function CategoryDialog({
     </Dialog>
   );
 }
+
+// ─── THEME STUDIO (design customization) ───────────────────────────────────
+
+type ThemePreset = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  settings: any;
+};
+
+function ThemeStudioTab() {
+  const [themes, setThemes] = useState<ThemePreset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<ThemePreset | null>(null);
+  const [draft, setDraft] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => setLoading(true));
+    fetch("/api/admin/themes")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setThemes(data.themes || []);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  const refresh = () => setRefreshKey((k) => k + 1);
+
+  const activateTheme = async (id: string) => {
+    const res = await fetch(`/api/admin/themes/${id}/activate`, { method: "POST" });
+    if (res.ok) {
+      toast.success("Theme activated — live on your store!");
+      refresh();
+      // Apply locally for instant preview
+      const theme = themes.find((t) => t.id === id);
+      if (theme) {
+        const root = document.documentElement;
+        Object.entries(theme.settings).forEach(([key, val]) => {
+          const cssKey = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
+          root.style.setProperty(cssKey, val as string);
+        });
+      }
+    }
+  };
+
+  const handleEdit = (theme: ThemePreset) => {
+    setEditing(theme);
+    setDraft({ ...theme.settings });
+    // Apply for live preview
+    applyDraftPreview({ ...theme.settings });
+  };
+
+  const applyDraftPreview = (settings: any) => {
+    const root = document.documentElement;
+    Object.entries(settings).forEach(([key, val]) => {
+      const cssKey = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
+      root.style.setProperty(cssKey, val as string);
+    });
+  };
+
+  const updateDraft = (key: string, value: string) => {
+    const newDraft = { ...draft, [key]: value };
+    setDraft(newDraft);
+    applyDraftPreview(newDraft);
+  };
+
+  const saveDraft = async () => {
+    if (!editing) return;
+    const res = await fetch(`/api/admin/themes/${editing.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ settings: draft }),
+    });
+    if (res.ok) {
+      toast.success("Theme saved");
+      setEditing(null);
+      setDraft(null);
+      refresh();
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setDraft(null);
+    // Re-apply the active theme
+    const active = themes.find((t) => t.isActive);
+    if (active) applyDraftPreview(active.settings);
+  };
+
+  const createFromPreset = async (name: string, settings: any) => {
+    const uniqueName = `${name} Copy`;
+    const res = await fetch("/api/admin/themes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: uniqueName, settings }),
+    });
+    if (res.ok) {
+      toast.success(`"${uniqueName}" created — customize away!`);
+      refresh();
+    }
+  };
+
+  const deleteTheme = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"?`)) return;
+    const res = await fetch(`/api/admin/themes/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Theme deleted");
+      refresh();
+    }
+  };
+
+  if (loading) return <Loading />;
+
+  const colorFields: { key: string; label: string }[] = [
+    { key: "primary", label: "Primary (buttons, text on light)" },
+    { key: "primaryForeground", label: "Primary Text (on primary bg)" },
+    { key: "accent", label: "Accent (gold highlights, links)" },
+    { key: "accentForeground", label: "Accent Text" },
+    { key: "background", label: "Background" },
+    { key: "foreground", label: "Body Text" },
+    { key: "muted", label: "Muted Background (cards, pills)" },
+    { key: "mutedForeground", label: "Muted Text" },
+    { key: "border", label: "Borders" },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="font-serif text-2xl mb-2">Theme Studio</h2>
+        <p className="text-sm text-muted-foreground max-w-2xl">
+          Change your store's complete look — colors, fonts, corners. Pick a preset to start,
+          then customize every detail. Changes go live instantly when you activate a theme.
+        </p>
+      </div>
+
+      {/* Preset themes grid */}
+      <div>
+        <h3 className="font-serif text-lg mb-4">Preset Themes</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {themes.map((theme) => (
+            <div
+              key={theme.id}
+              className={cn(
+                "border-2 rounded-sm overflow-hidden transition-all cursor-pointer",
+                theme.isActive ? "border-accent ring-2 ring-accent/20" : "border-border hover:border-accent/50"
+              )}
+              onClick={() => activateTheme(theme.id)}
+            >
+              {/* Color preview swatches */}
+              <div className="h-20 flex" style={{ background: theme.settings.background }}>
+                <div className="flex-1" style={{ background: theme.settings.primary }} />
+                <div className="flex-1" style={{ background: theme.settings.accent }} />
+                <div className="flex-1" style={{ background: theme.settings.muted }} />
+                <div className="flex-1" style={{ background: theme.settings.border }} />
+              </div>
+              <div className="p-3" style={{ background: theme.settings.background, color: theme.settings.foreground }}>
+                <div className="flex items-center justify-between">
+                  <p className="font-serif text-sm">{theme.name}</p>
+                  {theme.isActive && (
+                    <span className="text-[9px] tracking-wide-luxe uppercase text-accent font-medium">● Live</span>
+                  )}
+                </div>
+                <div className="flex gap-1 mt-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleEdit(theme); }}
+                    className="text-[10px] px-2 py-1 rounded-sm border border-border hover:bg-muted transition-colors"
+                  >
+                    Customize
+                  </button>
+                  {!theme.isActive && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); activateTheme(theme.id); }}
+                      className="text-[10px] px-2 py-1 rounded-sm bg-accent text-accent-foreground hover:opacity-90"
+                    >
+                      Activate
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteTheme(theme.id, theme.name); }}
+                    className="text-[10px] px-2 py-1 rounded-sm text-destructive hover:bg-destructive/10 ml-auto"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Create from preset */}
+      <div>
+        <h3 className="font-serif text-lg mb-4">Create New from Preset</h3>
+        <div className="flex flex-wrap gap-2">
+          {PRESET_THEMES_LIST.map((preset) => (
+            <button
+              key={preset.name}
+              onClick={() => createFromPreset(preset.name, preset.settings)}
+              className="text-sm px-4 py-2 border border-border rounded-sm hover:border-accent hover:text-accent transition-colors"
+            >
+              + {preset.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Customization panel */}
+      {editing && draft && (
+        <div className="border-2 border-accent/30 rounded-sm p-6 bg-secondary/10">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-serif text-lg">Customizing: {editing.name}</h3>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={cancelEdit} className="rounded-sm">Cancel</Button>
+              <Button size="sm" onClick={saveDraft} className="rounded-sm">Save Changes</Button>
+            </div>
+          </div>
+
+          {/* Color pickers */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {colorFields.map((field) => (
+              <div key={field.key}>
+                <Label className="text-xs mb-1.5 block">{field.label}</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={draft[field.key]}
+                    onChange={(e) => updateDraft(field.key, e.target.value)}
+                    className="w-10 h-10 rounded-sm border border-border cursor-pointer shrink-0"
+                  />
+                  <Input
+                    value={draft[field.key]}
+                    onChange={(e) => updateDraft(field.key, e.target.value)}
+                    className="rounded-sm font-mono text-xs"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Radius */}
+          <div className="mb-6">
+            <Label className="text-xs mb-1.5 block">Border Radius (corners)</Label>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min="0"
+                max="20"
+                value={parseInt(draft.radius) || 0}
+                onChange={(e) => updateDraft("radius", `${e.target.value}px`)}
+                className="flex-1 accent-accent"
+              />
+              <span className="font-mono text-sm w-16">{draft.radius}</span>
+            </div>
+          </div>
+
+          {/* Fonts */}
+          <div className="grid sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <Label className="text-xs mb-1.5 block">Heading Font (Serif)</Label>
+              <select
+                value={draft.fontSerif}
+                onChange={(e) => updateDraft("fontSerif", e.target.value)}
+                className="w-full h-10 px-3 rounded-sm border border-input bg-background text-sm"
+              >
+                <option value="Playfair Display, Georgia, serif">Playfair Display (elegant)</option>
+                <option value="Georgia, serif">Georgia (classic)</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="Inter, system-ui, sans-serif">Inter (modern sans)</option>
+                <option value="'Courier New', monospace">Courier (mono)</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Body Font (Sans)</Label>
+              <select
+                value={draft.fontSans}
+                onChange={(e) => updateDraft("fontSans", e.target.value)}
+                className="w-full h-10 px-3 rounded-sm border border-input bg-background text-sm"
+              >
+                <option value="Inter, system-ui, sans-serif">Inter (clean)</option>
+                <option value="system-ui, -apple-system, sans-serif">System Default</option>
+                <option value="'Helvetica Neue', Arial, sans-serif">Helvetica</option>
+                <option value="Georgia, serif">Georgia (serif body)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Live preview note */}
+          <div className="bg-accent/10 border border-accent/20 rounded-sm p-3 text-xs">
+            ✨ <strong>Live Preview:</strong> Changes are applied instantly to this page.
+            Click "Save Changes" to persist, or "Cancel" to revert.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PRESET_THEMES_LIST = [
+  { name: "Ivory Classic", settings: { primary: "#2c2418", primaryForeground: "#fbf7ed", accent: "#c19a45", accentForeground: "#2c2418", background: "#fbf7ed", foreground: "#2c2418", muted: "#f0ebe0", mutedForeground: "#75695a", border: "#e5dfd3", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Midnight Noir", settings: { primary: "#0d0d0d", primaryForeground: "#f5f5f0", accent: "#c19a45", accentForeground: "#0d0d0d", background: "#121212", foreground: "#f5f5f0", muted: "#1e1e1e", mutedForeground: "#999999", border: "#2a2a2a", radius: "0.25rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Rose Gold", settings: { primary: "#4a2c2a", primaryForeground: "#fdf5f0", accent: "#d4a5a5", accentForeground: "#4a2c2a", background: "#fdf5f0", foreground: "#4a2c2a", muted: "#f5e6e0", mutedForeground: "#8a6b65", border: "#e8d0c8", radius: "0.75rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Forest Sage", settings: { primary: "#1a2e1f", primaryForeground: "#f0f5ed", accent: "#7a9b6e", accentForeground: "#1a2e1f", background: "#f0f5ed", foreground: "#1a2e1f", muted: "#dfe8d8", mutedForeground: "#5a6b50", border: "#c5d4bc", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Ocean Blue", settings: { primary: "#0f2a3f", primaryForeground: "#eef4f8", accent: "#5b9bd5", accentForeground: "#0f2a3f", background: "#eef4f8", foreground: "#0f2a3f", muted: "#d8e5ee", mutedForeground: "#4a6578", border: "#bcd0de", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Royal Purple", settings: { primary: "#2d1b3d", primaryForeground: "#f5f0f8", accent: "#9b6dbf", accentForeground: "#2d1b3d", background: "#f5f0f8", foreground: "#2d1b3d", muted: "#e8d8f0", mutedForeground: "#6b5a78", border: "#d0bcd8", radius: "0.5rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Warm Terracotta", settings: { primary: "#3d2817", primaryForeground: "#faf3e8", accent: "#d4744a", accentForeground: "#faf3e8", background: "#faf3e8", foreground: "#3d2817", muted: "#f0e4d0", mutedForeground: "#8a6b50", border: "#e0d0b8", radius: "0.375rem", fontSerif: "Playfair Display, Georgia, serif", fontSans: "Inter, system-ui, sans-serif" } },
+  { name: "Sleek Minimal", settings: { primary: "#111111", primaryForeground: "#ffffff", accent: "#111111", accentForeground: "#ffffff", background: "#ffffff", foreground: "#111111", muted: "#f5f5f5", mutedForeground: "#888888", border: "#e5e5e5", radius: "0px", fontSerif: "Inter, system-ui, sans-serif", fontSans: "Inter, system-ui, sans-serif" } },
+];

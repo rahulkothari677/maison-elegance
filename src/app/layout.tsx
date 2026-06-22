@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextAuthProvider } from "@/components/next-auth-provider";
+import { ActiveThemeLoader } from "@/components/active-theme-loader";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -54,6 +55,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <NextAuthProvider>
+            <ActiveThemeLoader />
             {children}
             <Toaster />
             <SonnerToaster position="top-center" richColors />

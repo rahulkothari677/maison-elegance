@@ -72,6 +72,17 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ─── THEME PRESETS (admin-customizable design system) ───────────────────────
+
+model Theme {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(false)
+  settings  String   // JSON: { primary, accent, background, foreground, muted, radius, fontSerif, fontSans }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ─── CATEGORIES (multi-level hierarchy) ─────────────────────────────────────
 
 model Category {
