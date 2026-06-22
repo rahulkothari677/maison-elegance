@@ -98,38 +98,21 @@ export function ShopView() {
         return r.json();
       })
       .then((data) => {
-        if (data.products && data.products.length > 0) {
+        // Always trust the API result — even if it's an empty array.
+        // Only fall back to local static products if the API itself failed
+        // (caught in .catch below). This way admin-added products show up
+        // correctly, and an empty filter result shows "No products found"
+        // instead of silently swapping in demo data.
+        if (Array.isArray(data.products)) {
           setApiProducts(data.products);
         } else {
-          // Fallback: filter local products
-          let result = [...localProducts];
-          if (selectedCategory && selectedCategory !== "all") {
-            const catName = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
-            result = result.filter(
-              (p) =>
-                p.category.toLowerCase() === selectedCategory.toLowerCase() ||
-                p.category === catName
-            );
-          }
-          if (selectedSizes.length > 0) {
-            result = result.filter((p) =>
-              p.sizes.some((s) => selectedSizes.includes(s))
-            );
-          }
-          if (selectedColors.length > 0) {
-            result = result.filter((p) =>
-              p.colors.some((c) => selectedColors.includes(c.name))
-            );
-          }
-          result = result.filter(
-            (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-          );
-          setApiProducts(result);
+          setApiProducts([]);
         }
       })
       .catch(() => {
-        // API failed — use local product data as fallback
-        console.log("ShopView: using fallback local products (API unavailable)");
+        // API failed entirely — use local product data as fallback so the
+        // page still works in dev / preview environments without DB
+        console.log("ShopView: API unavailable, using fallback local products");
         let result = [...localProducts];
         if (selectedCategory && selectedCategory !== "all") {
           const catName = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);

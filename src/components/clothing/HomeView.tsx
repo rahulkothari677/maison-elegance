@@ -9,7 +9,7 @@ import { ProductCard } from "./ProductCard";
 import { FlashSaleSection } from "./FlashSale";
 import { HeroCarousel } from "./HeroCarousel";
 import { OutfitGenerator } from "./OutfitGenerator";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -24,6 +24,7 @@ const stagger = {
 export function HomeView() {
   const { setView, setCategory, openProduct, lastViewedProductIds } = useStore();
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [apiProducts, setApiProducts] = useState<typeof products | null>(null);
   const lookbookRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: lookbookRef,
@@ -33,13 +34,39 @@ export function HomeView() {
   const y2 = useTransform(scrollYProgress, [0, 1], ["0%", "-20%"]);
   const y3 = useTransform(scrollYProgress, [0, 1], ["0%", "15%"]);
 
-  const newArrivals = products.filter((p) => p.badge === "New" || p.badge === "Bestseller").slice(0, 4);
-  const featured = products.slice(0, 8);
-  const heroFeatured = products.find((p) => p.id === "p1")!;
-  const collectionLeft = products.find((p) => p.id === "p2")!;
-  const collectionRight = products.find((p) => p.id === "p9")!;
+  // Fetch products from API (Turso DB) — falls back to static local products
+  // if the API is unavailable, so the page never breaks.
+  useEffect(() => {
+    fetch("/api/products?sort=newest")
+      .then((r) => {
+        if (!r.ok) throw new Error("API failed");
+        return r.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data.products) && data.products.length > 0) {
+          setApiProducts(data.products);
+        }
+      })
+      .catch(() => {
+        // Silent fallback to static products
+      });
+  }, []);
+
+  // Use API products if available, otherwise static local products
+  const allProducts = apiProducts || products;
+
+  const newArrivals = allProducts.filter((p) => p.badge === "New" || p.badge === "Bestseller").slice(0, 4);
+  const featured = allProducts.slice(0, 8);
+  const heroFeatured = allProducts.find((p) => p.id === "p1") || allProducts[0]!;
+  const collectionLeft = allProducts.find((p) => p.id === "p2") || allProducts[1] || allProducts[0]!;
+  const collectionRight = allProducts.find((p) => p.id === "p9") || allProducts[2] || allProducts[0]!;
   const recentlyViewed = lastViewedProductIds
-    .map((id) => getProductById(id))
+    .map((id) => {
+      // Try API products first, then static
+      const fromApi = allProducts.find((p) => p.id === id);
+      if (fromApi) return fromApi;
+      return getProductById(id);
+    })
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
     .slice(0, 6);
 
@@ -49,7 +76,7 @@ export function HomeView() {
     recentlyViewed.map((p) => p.category)
   );
   const recommendations = recentlyViewed.length > 0
-    ? products
+    ? allProducts
         .filter(
           (p) =>
             browsedCategories.has(p.category) &&
