@@ -20,6 +20,7 @@ import { ConciergeChat } from "@/components/clothing/ConciergeChat";
 import { CompareTray, CompareModal } from "@/components/clothing/CompareTray";
 import { AdminView } from "@/components/clothing/AdminView";
 import { CommunityView } from "@/components/clothing/CommunityView";
+import { VisualSearch } from "@/components/clothing/VisualSearch";
 import { LoadingCinematic } from "@/components/clothing/LoadingCinematic";
 import { CustomCursor } from "@/components/clothing/CustomCursor";
 import { AnimatePresence, motion } from "framer-motion";
@@ -69,6 +70,7 @@ export default function Home() {
             {effectiveView === "order-success" && <OrderSuccessView />}
             {effectiveView === "admin" && <AdminView />}
             {effectiveView === "community" && <CommunityView />}
+            {effectiveView === "visual-search" && <VisualSearch />}
           </motion.div>
         </AnimatePresence>
       </main>

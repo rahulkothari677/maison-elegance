@@ -6,6 +6,7 @@ import { MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { products } from "@/lib/data";
 
 type Message = {
   id: string;
@@ -18,49 +19,16 @@ const initialMessages: Message[] = [
   {
     id: "m1",
     role: "agent",
-    text: "Bonjour! I'm Camille, your personal stylist at MAISON ÉLÉGANCE. How may I assist you today?",
+    text: "Bonjour! I'm Camille, your personal stylist at MAISON ÉLÉGANCE. Ask me anything — sizing, styling, materials, or what to wear for a specific occasion. I'm here to help you find the perfect piece.",
     time: "Just now",
   },
 ];
 
 const suggestedQuestions = [
-  "What size should I order?",
-  "Tell me about your cashmere",
-  "Do you offer alterations?",
-  "Help me style a winter coat",
-];
-
-const autoReplies: { keywords: string[]; reply: string }[] = [
-  {
-    keywords: ["size", "fit", "small", "medium", "large"],
-    reply:
-      "Our pieces run true to size. For a tailored fit, take your usual size; for a relaxed look, size up by one. Each product page has detailed fit notes from our master tailors. Would you like me to recommend a size based on your measurements?",
-  },
-  {
-    keywords: ["cashmere", "wool", "material", "fabric"],
-    reply:
-      "Our cashmere is grade-A Mongolian, 16.5 micron, certified by The Good Cashmere Standard. We knit on 12-gauge machines in Inner Mongolia and finish in Italy. The Edmonton crewneck is our most-loved piece — would you like to see it?",
-  },
-  {
-    keywords: ["alter", "tailor", "adjust", "hem"],
-    reply:
-      "Yes! We offer complimentary alterations on all tailored pieces at our Florence atelier, and partner with local tailors in major cities. Just reply to your order confirmation email to arrange. Lifetime repairs are also included.",
-  },
-  {
-    keywords: ["coat", "winter", "warm"],
-    reply:
-      "The Camille coat is our signature — Italian wool-cashmere, hand-tailored in Florence over 18 hours. It's our bestseller for a reason. Would you like to view it in camel, charcoal, or ivory?",
-  },
-  {
-    keywords: ["ship", "delivery", "when", "arrive"],
-    reply:
-      "Complimentary express shipping on orders over $250 (1-2 business days). Standard shipping is free over $250 as well (3-5 days). Overnight is $35. All orders ship from our Florence warehouse.",
-  },
-  {
-    keywords: ["return", "refund", "exchange"],
-    reply:
-      "30-day free returns, no questions asked. Gold tier members enjoy 60 days. Just use the prepaid label included with every order. Refunds process within 3-5 business days.",
-  },
+  "What should I wear to a winter wedding?",
+  "Tell me about the Camille coat",
+  "How does the sizing run for the Aurora dress?",
+  "What's your warmest piece for Florence winters?",
 ];
 
 export function ConciergeChat() {
@@ -76,16 +44,9 @@ export function ConciergeChat() {
     }
   }, [messages, typing]);
 
-  const findReply = (text: string): string => {
-    const lower = text.toLowerCase();
-    for (const { keywords, reply } of autoReplies) {
-      if (keywords.some((k) => lower.includes(k))) return reply;
-    }
-    return "Thank you for your question. One of our atelier specialists will respond within 2 hours. In the meantime, feel free to browse our collection — every piece is handcrafted in Europe.";
-  };
-
-  const handleSend = (text: string) => {
+  const handleSend = async (text: string) => {
     if (!text.trim()) return;
+
     const userMsg: Message = {
       id: `u-${Date.now()}`,
       role: "user",
@@ -96,17 +57,43 @@ export function ConciergeChat() {
     setInput("");
     setTyping(true);
 
-    setTimeout(() => {
-      const reply = findReply(text);
+    try {
+      const res = await fetch("/api/ai/stylist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          conversationHistory: messages.slice(1).map((m) => ({ role: m.role, text: m.text })),
+          products: products.map((p) => ({
+            name: p.name,
+            price: p.price,
+            shortDescription: p.shortDescription,
+            colors: p.colors,
+            sizes: p.sizes,
+            category: p.category,
+          })),
+        }),
+      });
+
+      const data = await res.json();
       const agentMsg: Message = {
         id: `a-${Date.now()}`,
         role: "agent",
-        text: reply,
+        text: data.reply,
         time: "Just now",
       };
       setMessages((m) => [...m, agentMsg]);
+    } catch {
+      const agentMsg: Message = {
+        id: `a-${Date.now()}`,
+        role: "agent",
+        text: "I apologize, I'm having trouble connecting right now. Please try again in a moment, or browse our collection while I reconnect.",
+        time: "Just now",
+      };
+      setMessages((m) => [...m, agentMsg]);
+    } finally {
       setTyping(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -140,10 +127,11 @@ export function ConciergeChat() {
               exit={{ rotate: -90, opacity: 0 }}
               className="flex items-center gap-2"
             >
-              <MessageCircle className="h-5 w-5" />
+              <Sparkles className="h-5 w-5 text-accent" />
               <span className="text-sm font-medium hidden sm:inline">
-                Concierge
+                Ask Camille AI
               </span>
+              <span className="text-sm font-medium sm:hidden">AI</span>
             </motion.span>
           )}
         </AnimatePresence>
@@ -157,7 +145,7 @@ export function ConciergeChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-24 right-6 z-40 w-[calc(100vw-3rem)] sm:w-[380px] h-[520px] bg-background border border-border rounded-sm shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-40 w-[calc(100vw-3rem)] sm:w-[400px] h-[560px] bg-background border border-border rounded-sm shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-primary text-primary-foreground p-5 flex items-center gap-3">
@@ -172,8 +160,8 @@ export function ConciergeChat() {
               <div className="flex-1">
                 <p className="font-serif text-base">Camille Dubois</p>
                 <p className="text-[11px] text-primary-foreground/70 flex items-center gap-1">
-                  <Sparkles className="h-2.5 w-2.5" />
-                  Personal Stylist · Online
+                  <Sparkles className="h-2.5 w-2.5 text-accent" />
+                  AI Stylist · Powered by Z.ai
                 </p>
               </div>
             </div>
@@ -195,7 +183,7 @@ export function ConciergeChat() {
                 >
                   <div
                     className={cn(
-                      "max-w-[80%] px-4 py-2.5 rounded-sm text-sm",
+                      "max-w-[80%] px-4 py-2.5 rounded-sm text-sm whitespace-pre-wrap",
                       m.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-background border border-border"
@@ -231,7 +219,7 @@ export function ConciergeChat() {
               {messages.length === 1 && (
                 <div className="space-y-1.5 pt-2">
                   <p className="text-[11px] text-muted-foreground px-1">
-                    Suggested questions:
+                    Try asking:
                   </p>
                   {suggestedQuestions.map((q) => (
                     <button
@@ -257,7 +245,7 @@ export function ConciergeChat() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
+                placeholder="Ask Camille anything..."
                 className="rounded-sm h-10"
               />
               <Button
@@ -265,7 +253,7 @@ export function ConciergeChat() {
                 size="icon"
                 className="rounded-sm h-10 w-10 shrink-0"
                 aria-label="Send"
-                disabled={!input.trim()}
+                disabled={!input.trim() || typing}
               >
                 <Send className="h-4 w-4" />
               </Button>

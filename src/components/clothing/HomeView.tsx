@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "./ProductCard";
 import { FlashSaleSection } from "./FlashSale";
 import { HeroCarousel } from "./HeroCarousel";
+import { OutfitGenerator } from "./OutfitGenerator";
 import { useRef } from "react";
 
 const fadeUp = {
@@ -617,6 +618,9 @@ export function HomeView() {
           </div>
         </section>
       )}
+
+      {/* AI OUTFIT GENERATOR */}
+      <OutfitGenerator />
 
       {/* LIFESTYLE GRID — Instagram-style visual mosaic */}
       <section className="border-t border-border">

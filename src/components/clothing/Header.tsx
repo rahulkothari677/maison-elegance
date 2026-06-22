@@ -15,6 +15,7 @@ import {
   LogOut,
   Crown,
   Home,
+  Sparkles,
 } from "lucide-react";
 import { useStore, cartCount } from "@/lib/store";
 import { products, categories } from "@/lib/data";
@@ -624,6 +625,23 @@ export function Header() {
                   )}
                 {!searchQuery && (
                   <div className="mt-6 space-y-4">
+                    {/* AI Visual Search button */}
+                    <button
+                      onClick={() => {
+                        setSearchOpen(false);
+                        setView("visual-search");
+                      }}
+                      className="w-full flex items-center gap-3 p-3 border-2 border-accent/30 bg-accent/5 rounded-sm hover:bg-accent/10 transition-colors text-left"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                        <Sparkles className="h-4 w-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-accent">AI Visual Search</p>
+                        <p className="text-xs text-muted-foreground">Upload a photo → find similar pieces</p>
+                      </div>
+                    </button>
+
                     <div>
                       <p className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground mb-3">
                         Trending Searches
