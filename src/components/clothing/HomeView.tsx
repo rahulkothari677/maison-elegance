@@ -400,14 +400,14 @@ export function HomeView() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-12 gap-4 lg:gap-6 items-start">
-            {/* Tall left image */}
+          <div className="grid grid-cols-12 gap-4 lg:gap-6">
+            {/* Tall left image — spans full height of right column */}
             <motion.div
               className="col-span-12 md:col-span-5"
             >
               <button
                 onClick={() => openProduct("p1")}
-                className="block w-full h-full group relative overflow-hidden rounded-sm aspect-[3/4]"
+                className="block w-full h-full group relative overflow-hidden rounded-sm aspect-[3/4] md:aspect-auto md:min-h-[600px]"
               >
                 <img
                   src={heroImages.editorial1}
@@ -427,69 +427,73 @@ export function HomeView() {
               </button>
             </motion.div>
 
-            {/* Right column — two stacked images */}
-            <div className="col-span-12 md:col-span-7 space-y-4 lg:space-y-6">
-              {/* Top right image */}
-              <motion.div>
-                <button
-                  onClick={() => openProduct("p2")}
-                  className="block w-full group relative overflow-hidden rounded-sm aspect-[16/9]"
-                >
-                  <img
-                    src={heroImages.editorial2}
-                    alt="Editorial 2"
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute bottom-6 left-6 right-6 text-white text-left">
-                    <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">
-                      Chapter Two
-                    </p>
-                    <p className="font-serif text-2xl lg:text-3xl">The Silk Slip</p>
-                    <p className="text-sm text-white/80 mt-1">
-                      19-momme charmeuse, bias-cut in Como
-                    </p>
-                  </div>
-                </button>
-              </motion.div>
-
-              {/* Bottom right — two side by side */}
-              <motion.div className="grid grid-cols-2 gap-4 lg:gap-6">
-                <button
-                  onClick={() => openProduct("p9")}
-                  className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4]"
-                >
-                  <img
-                    src={heroImages.editorial3}
-                    alt="Editorial 3"
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 text-white text-left">
-                    <p className="text-[9px] tracking-luxe uppercase text-white/70 mb-1">
-                      Chapter Three
-                    </p>
-                    <p className="font-serif text-lg lg:text-xl">Hand-Welted Boots</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => openProduct("p5")}
-                  className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4] bg-secondary"
-                >
+            {/* Right column — 3 equal images stacked, fills same height as left */}
+            <div className="col-span-12 md:col-span-7 grid grid-rows-3 gap-4 lg:gap-6">
+              {/* Chapter Two */}
+              <motion.button
+                onClick={() => openProduct("p2")}
+                className="block w-full h-full group relative overflow-hidden rounded-sm"
+              >
                 <img
-                  src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80"
+                  src={heroImages.editorial2}
+                  alt="Editorial 2"
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-5 right-5 text-white text-left">
+                  <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">
+                    Chapter Two
+                  </p>
+                  <p className="font-serif text-xl lg:text-2xl">The Silk Slip</p>
+                  <p className="text-xs text-white/80 mt-0.5">
+                    19-momme charmeuse, bias-cut in Como
+                  </p>
+                </div>
+              </motion.button>
+
+              {/* Chapter Three */}
+              <motion.button
+                onClick={() => openProduct("p9")}
+                className="block w-full h-full group relative overflow-hidden rounded-sm"
+              >
+                <img
+                  src={heroImages.editorial3}
+                  alt="Editorial 3"
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-5 right-5 text-white text-left">
+                  <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">
+                    Chapter Three
+                  </p>
+                  <p className="font-serif text-xl lg:text-2xl">Hand-Welted Boots</p>
+                  <p className="text-xs text-white/80 mt-0.5">
+                    Built to outlive your wardrobe
+                  </p>
+                </div>
+              </motion.button>
+
+              {/* Chapter Four */}
+              <motion.button
+                onClick={() => openProduct("p5")}
+                className="block w-full h-full group relative overflow-hidden rounded-sm"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=900&q=80"
                   alt="Editorial 4"
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 text-white text-left">
-                  <p className="text-[9px] tracking-luxe uppercase text-white/70 mb-1">
+                <div className="absolute bottom-4 left-5 right-5 text-white text-left">
+                  <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">
                     Chapter Four
                   </p>
-                  <p className="font-serif text-lg lg:text-xl">Saddle-Stitched Leather</p>
+                  <p className="font-serif text-xl lg:text-2xl">Saddle-Stitched Leather</p>
+                  <p className="text-xs text-white/80 mt-0.5">
+                    Full-grain Italian leather, hand-stitched in Florence
+                  </p>
                 </div>
-              </button>
-              </motion.div>
+              </motion.button>
             </div>
           </div>
 

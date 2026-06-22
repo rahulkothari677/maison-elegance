@@ -224,9 +224,9 @@ export function Header() {
         }}
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-20 gap-8">
             {/* Left: Mobile menu + Nav */}
-            <div className="flex items-center gap-6 flex-1">
+            <div className="flex items-center gap-8 flex-1">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
                   <Button
@@ -416,27 +416,6 @@ export function Header() {
               >
                 <Search className="h-[18px] w-[18px]" />
               </Button>
-
-              {/* Community + Subscription links — placed in right area to keep logo centered */}
-              <button
-                onClick={() => {
-                  setView("community");
-                  if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="hidden lg:inline-flex text-[12px] tracking-wide-luxe uppercase py-1 hover:text-accent transition-colors items-center gap-1"
-              >
-                <Sparkles className="h-3 w-3 text-accent" />
-                Community
-              </button>
-              <button
-                onClick={() => {
-                  setView("subscription");
-                  if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="hidden lg:inline-flex text-[12px] tracking-wide-luxe uppercase py-1 hover:text-accent transition-colors"
-              >
-                Atelier Box
-              </button>
 
               <div className="hidden sm:block">
                 <CurrencySelector compact />

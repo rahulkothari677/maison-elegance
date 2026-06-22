@@ -33,6 +33,7 @@ import {
   VolumeX,
   MousePointer,
   MouseOff,
+  Sparkles,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useUserData } from "@/lib/use-user-data";
@@ -1535,6 +1536,49 @@ export function ProfileView() {
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Explore More — Community + Subscription */}
+              <div className="p-6 border border-border rounded-sm">
+                <h3 className="font-serif text-lg mb-4">Explore MAISON</h3>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      setView("community");
+                      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full flex items-center justify-between p-4 border border-border rounded-sm hover:border-accent hover:bg-accent/5 transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                        <Sparkles className="h-4 w-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Community Style Feed</p>
+                        <p className="text-xs text-muted-foreground">Share looks, get inspired, shop the community</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setView("subscription");
+                      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full flex items-center justify-between p-4 border border-border rounded-sm hover:border-accent hover:bg-accent/5 transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                        <Package className="h-4 w-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">The Atelier Box</p>
+                        <p className="text-xs text-muted-foreground">Monthly curated box — $250/mo, cancel anytime</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                  </button>
                 </div>
               </div>
 
