@@ -55,6 +55,8 @@ import { signOut } from "next-auth/react";
 import type { ProfileTab, Address, PaymentMethod } from "@/lib/store";
 import { AuthModal } from "./AuthModal";
 import { OrderTimeline } from "./OrderTimeline";
+import { CurrencySelector } from "./CurrencySelector";
+import { LanguageSelector } from "./LanguageSelector";
 
 const tabs: { id: ProfileTab; label: string; icon: any }[] = [
   { id: "overview", label: "Overview", icon: User },
@@ -1505,23 +1507,34 @@ export function ProfileView() {
               <div className="p-6 border border-border rounded-sm">
                 <h3 className="font-serif text-lg mb-4">Preferences</h3>
                 <div className="space-y-3">
-                  {[
-                    { label: "Currency", value: "USD ($)" },
-                    { label: "Language", value: "English" },
-                    { label: "Size System", value: "US" },
-                    { label: "Region", value: "United States" },
-                  ].map((pref) => (
-                    <div
-                      key={pref.label}
-                      className="flex items-center justify-between py-3 border-b border-border last:border-0"
-                    >
-                      <span className="text-sm">{pref.label}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">{pref.value}</span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
+                  <div className="flex items-center justify-between py-3 border-b border-border">
+                    <span className="text-sm">Currency</span>
+                    <div className="flex items-center gap-2">
+                      <CurrencySelector />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-border">
+                    <span className="text-sm">Language</span>
+                    <div className="flex items-center gap-2">
+                      <LanguageSelector />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-border">
+                    <span className="text-sm">Size System</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">US</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm">Region</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">United States</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
                 </div>
               </div>
 

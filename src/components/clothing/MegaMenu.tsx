@@ -132,20 +132,6 @@ export function MegaMenu() {
         );
       })}
 
-      {/* Community link */}
-      <button
-        onClick={() => {
-          useStore.getState().setView("community");
-          if (typeof window !== "undefined") {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-        }}
-        className="relative text-[12px] tracking-wide-luxe uppercase py-1 transition-colors hover:text-accent inline-flex items-center gap-1.5"
-      >
-        <span className="text-accent">✦</span>
-        Community
-      </button>
-
       <AnimatePresence>
         {activeCat && (
           <motion.div

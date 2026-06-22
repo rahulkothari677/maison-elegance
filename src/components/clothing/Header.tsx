@@ -320,6 +320,33 @@ export function Header() {
                         </p>
                       )}
                       <div className="h-px bg-border my-4" />
+                      {/* Community + Subscription in mobile menu */}
+                      <button
+                        onClick={() => {
+                          setView("community");
+                          setMobileOpen(false);
+                          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                      >
+                        <span className="text-lg font-serif inline-flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-accent" />
+                          Community
+                        </span>
+                        <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setView("subscription");
+                          setMobileOpen(false);
+                          if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="w-full flex items-center justify-between py-3 text-left hover:text-accent transition-colors group"
+                      >
+                        <span className="text-lg font-serif">Atelier Box</span>
+                        <ChevronRight className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </button>
+                      <div className="h-px bg-border my-4" />
                       {isAuthenticated ? (
                         <>
                           <button
@@ -389,6 +416,27 @@ export function Header() {
               >
                 <Search className="h-[18px] w-[18px]" />
               </Button>
+
+              {/* Community + Subscription links — placed in right area to keep logo centered */}
+              <button
+                onClick={() => {
+                  setView("community");
+                  if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="hidden lg:inline-flex text-[12px] tracking-wide-luxe uppercase py-1 hover:text-accent transition-colors items-center gap-1"
+              >
+                <Sparkles className="h-3 w-3 text-accent" />
+                Community
+              </button>
+              <button
+                onClick={() => {
+                  setView("subscription");
+                  if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="hidden lg:inline-flex text-[12px] tracking-wide-luxe uppercase py-1 hover:text-accent transition-colors"
+              >
+                Atelier Box
+              </button>
 
               <div className="hidden sm:block">
                 <CurrencySelector compact />

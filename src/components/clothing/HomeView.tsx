@@ -400,11 +400,10 @@ export function HomeView() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-12 gap-4 lg:gap-6">
+          <div className="grid grid-cols-12 gap-4 lg:gap-6 items-start">
             {/* Tall left image */}
             <motion.div
-              style={{ y: y1 }}
-              className="col-span-12 md:col-span-5 row-span-2"
+              className="col-span-12 md:col-span-5"
             >
               <button
                 onClick={() => openProduct("p1")}
@@ -428,53 +427,55 @@ export function HomeView() {
               </button>
             </motion.div>
 
-            {/* Top right image */}
-            <motion.div style={{ y: y2 }} className="col-span-12 md:col-span-7">
-              <button
-                onClick={() => openProduct("p2")}
-                className="block w-full group relative overflow-hidden rounded-sm aspect-[16/9]"
-              >
-                <img
-                  src={heroImages.editorial2}
-                  alt="Editorial 2"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6 text-white text-left">
-                  <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">
-                    Chapter Two
-                  </p>
-                  <p className="font-serif text-2xl lg:text-3xl">The Silk Slip</p>
-                  <p className="text-sm text-white/80 mt-1">
-                    19-momme charmeuse, bias-cut in Como
-                  </p>
-                </div>
-              </button>
-            </motion.div>
+            {/* Right column — two stacked images */}
+            <div className="col-span-12 md:col-span-7 space-y-4 lg:space-y-6">
+              {/* Top right image */}
+              <motion.div>
+                <button
+                  onClick={() => openProduct("p2")}
+                  className="block w-full group relative overflow-hidden rounded-sm aspect-[16/9]"
+                >
+                  <img
+                    src={heroImages.editorial2}
+                    alt="Editorial 2"
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-6 left-6 right-6 text-white text-left">
+                    <p className="text-[10px] tracking-luxe uppercase text-white/70 mb-1">
+                      Chapter Two
+                    </p>
+                    <p className="font-serif text-2xl lg:text-3xl">The Silk Slip</p>
+                    <p className="text-sm text-white/80 mt-1">
+                      19-momme charmeuse, bias-cut in Como
+                    </p>
+                  </div>
+                </button>
+              </motion.div>
 
-            {/* Bottom right — two side by side */}
-            <motion.div style={{ y: y3 }} className="col-span-12 md:col-span-7 grid grid-cols-2 gap-4 lg:gap-6">
-              <button
-                onClick={() => openProduct("p9")}
-                className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4]"
-              >
-                <img
-                  src={heroImages.editorial3}
-                  alt="Editorial 3"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 text-white text-left">
-                  <p className="text-[9px] tracking-luxe uppercase text-white/70 mb-1">
-                    Chapter Three
-                  </p>
-                  <p className="font-serif text-lg lg:text-xl">Hand-Welted Boots</p>
-                </div>
-              </button>
-              <button
-                onClick={() => openProduct("p5")}
-                className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4] bg-secondary"
-              >
+              {/* Bottom right — two side by side */}
+              <motion.div className="grid grid-cols-2 gap-4 lg:gap-6">
+                <button
+                  onClick={() => openProduct("p9")}
+                  className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4]"
+                >
+                  <img
+                    src={heroImages.editorial3}
+                    alt="Editorial 3"
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white text-left">
+                    <p className="text-[9px] tracking-luxe uppercase text-white/70 mb-1">
+                      Chapter Three
+                    </p>
+                    <p className="font-serif text-lg lg:text-xl">Hand-Welted Boots</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => openProduct("p5")}
+                  className="block w-full group relative overflow-hidden rounded-sm aspect-[3/4] bg-secondary"
+                >
                 <img
                   src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80"
                   alt="Editorial 4"
@@ -488,7 +489,8 @@ export function HomeView() {
                   <p className="font-serif text-lg lg:text-xl">Saddle-Stitched Leather</p>
                 </div>
               </button>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
 
           <motion.div
