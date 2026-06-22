@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { sanitizeInput } from "@/lib/security";
 
 export async function GET(
   req: NextRequest,
@@ -67,10 +68,10 @@ export async function POST(
     data: {
       productId: product.id,
       userId: user.id,
-      authorName: user.name || "Anonymous",
+      authorName: sanitizeInput(user.name || "Anonymous"),
       rating: parseInt(rating),
-      title: title || null,
-      body: reviewBody,
+      title: title ? sanitizeInput(title) : null,
+      body: sanitizeInput(reviewBody),
       images: images && images.length > 0 ? JSON.stringify(images) : null,
       verified: false,
     },

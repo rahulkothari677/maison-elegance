@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { sanitizeInput } from "@/lib/security";
 
 export async function GET() {
   const posts = await db.stylePost.findMany({
@@ -28,10 +29,10 @@ export async function POST(req: NextRequest) {
   const post = await db.stylePost.create({
     data: {
       userId: user.id,
-      authorName: user.name || "Anonymous",
+      authorName: sanitizeInput(user.name || "Anonymous"),
       authorAvatar: user.image || null,
       image: body.image,
-      caption: body.caption,
+      caption: sanitizeInput(body.caption),
       productId: body.productId || null,
     },
   });
