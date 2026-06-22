@@ -278,18 +278,19 @@ function SingleImageInput({
 // ─── Hero Carousel Editor ────────────────────────────────────────────────────
 
 function HeroCarouselEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
-  const slides = data.slides || [];
+  // Initialize with empty slides if no data yet
+  const safeData = data || { slides: [] };
+  const slides = safeData.slides || [];
 
   const updateSlide = (i: number, patch: any) => {
     const next = [...slides];
     next[i] = { ...next[i], ...patch };
-    onChange({ ...data, slides: next });
+    onChange({ ...safeData, slides: next });
   };
 
   const addSlide = () => {
     onChange({
-      ...data,
+      ...safeData,
       slides: [
         ...slides,
         {
@@ -306,7 +307,7 @@ function HeroCarouselEditor({ data, onChange }: { data: any; onChange: (d: any) 
   };
 
   const removeSlide = (i: number) => {
-    onChange({ ...data, slides: slides.filter((_, idx) => idx !== i) });
+    onChange({ ...safeData, slides: slides.filter((_, idx) => idx !== i) });
   };
 
   return (
@@ -389,13 +390,13 @@ function HeroCarouselEditor({ data, onChange }: { data: any; onChange: (d: any) 
 // ─── Lookbook Editor ─────────────────────────────────────────────────────────
 
 function LookbookEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
-  const items = data.items || [];
+  const safeData = data || { title: "", subtitle: "", items: [] };
+  const items = safeData.items || [];
 
   const updateItem = (i: number, patch: any) => {
     const next = [...items];
     next[i] = { ...next[i], ...patch };
-    onChange({ ...data, items: next });
+    onChange({ ...safeData, items: next });
   };
 
   return (
@@ -404,15 +405,15 @@ function LookbookEditor({ data, onChange }: { data: any; onChange: (d: any) => v
         <div>
           <Label className="text-xs mb-1.5 block">Section Title</Label>
           <Input
-            value={data.title || ""}
-            onChange={(e) => onChange({ ...data, title: e.target.value })}
+            value={safeData.title || ""}
+            onChange={(e) => onChange({ ...safeData, title: e.target.value })}
           />
         </div>
         <div>
           <Label className="text-xs mb-1.5 block">Subtitle</Label>
           <Input
-            value={data.subtitle || ""}
-            onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+            value={safeData.subtitle || ""}
+            onChange={(e) => onChange({ ...safeData, subtitle: e.target.value })}
           />
         </div>
       </div>
@@ -424,7 +425,7 @@ function LookbookEditor({ data, onChange }: { data: any; onChange: (d: any) => v
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => onChange({ ...data, items: items.filter((_, idx) => idx !== i) })}
+              onClick={() => onChange({ ...safeData, items: items.filter((_, idx) => idx !== i) })}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -455,7 +456,7 @@ function LookbookEditor({ data, onChange }: { data: any; onChange: (d: any) => v
       <Button
         type="button"
         variant="outline"
-        onClick={() => onChange({ ...data, items: [...items, { image: "", title: "", subtitle: "" }] })}
+        onClick={() => onChange({ ...safeData, items: [...items, { image: "", title: "", subtitle: "" }] })}
         className="w-full"
       >
         <Plus className="h-4 w-4 mr-2" />
@@ -468,13 +469,13 @@ function LookbookEditor({ data, onChange }: { data: any; onChange: (d: any) => v
 // ─── Explore the Maison Editor ───────────────────────────────────────────────
 
 function ExploreMaisonEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
-  const items = data.items || [];
+  const safeData = data || { title: "", subtitle: "", items: [] };
+  const items = safeData.items || [];
 
   const updateItem = (i: number, patch: any) => {
     const next = [...items];
     next[i] = { ...next[i], ...patch };
-    onChange({ ...data, items: next });
+    onChange({ ...safeData, items: next });
   };
 
   return (
@@ -483,15 +484,15 @@ function ExploreMaisonEditor({ data, onChange }: { data: any; onChange: (d: any)
         <div>
           <Label className="text-xs mb-1.5 block">Section Title</Label>
           <Input
-            value={data.title || ""}
-            onChange={(e) => onChange({ ...data, title: e.target.value })}
+            value={safeData.title || ""}
+            onChange={(e) => onChange({ ...safeData, title: e.target.value })}
           />
         </div>
         <div>
           <Label className="text-xs mb-1.5 block">Subtitle</Label>
           <Input
-            value={data.subtitle || ""}
-            onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+            value={safeData.subtitle || ""}
+            onChange={(e) => onChange({ ...safeData, subtitle: e.target.value })}
           />
         </div>
       </div>
@@ -503,7 +504,7 @@ function ExploreMaisonEditor({ data, onChange }: { data: any; onChange: (d: any)
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => onChange({ ...data, items: items.filter((_, idx) => idx !== i) })}
+              onClick={() => onChange({ ...safeData, items: items.filter((_, idx) => idx !== i) })}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -544,7 +545,7 @@ function ExploreMaisonEditor({ data, onChange }: { data: any; onChange: (d: any)
         variant="outline"
         onClick={() =>
           onChange({
-            ...data,
+            ...safeData,
             items: [...items, { image: "", title: "", description: "", ctaLink: "our-story" }],
           })
         }
@@ -560,13 +561,13 @@ function ExploreMaisonEditor({ data, onChange }: { data: any; onChange: (d: any)
 // ─── Follow Our World Editor ─────────────────────────────────────────────────
 
 function FollowWorldEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
-  const items = data.items || [];
+  const safeData = data || { title: "", subtitle: "", items: [] };
+  const items = safeData.items || [];
 
   const updateItem = (i: number, patch: any) => {
     const next = [...items];
     next[i] = { ...next[i], ...patch };
-    onChange({ ...data, items: next });
+    onChange({ ...safeData, items: next });
   };
 
   return (
@@ -575,15 +576,15 @@ function FollowWorldEditor({ data, onChange }: { data: any; onChange: (d: any) =
         <div>
           <Label className="text-xs mb-1.5 block">Section Title</Label>
           <Input
-            value={data.title || ""}
-            onChange={(e) => onChange({ ...data, title: e.target.value })}
+            value={safeData.title || ""}
+            onChange={(e) => onChange({ ...safeData, title: e.target.value })}
           />
         </div>
         <div>
           <Label className="text-xs mb-1.5 block">Subtitle (handle)</Label>
           <Input
-            value={data.subtitle || ""}
-            onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+            value={safeData.subtitle || ""}
+            onChange={(e) => onChange({ ...safeData, subtitle: e.target.value })}
             placeholder="@maisonelegance"
           />
         </div>
@@ -597,7 +598,7 @@ function FollowWorldEditor({ data, onChange }: { data: any; onChange: (d: any) =
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => onChange({ ...data, items: items.filter((_, idx) => idx !== i) })}
+                onClick={() => onChange({ ...safeData, items: items.filter((_, idx) => idx !== i) })}
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
@@ -630,7 +631,7 @@ function FollowWorldEditor({ data, onChange }: { data: any; onChange: (d: any) =
       <Button
         type="button"
         variant="outline"
-        onClick={() => onChange({ ...data, items: [...items, { image: "", caption: "", link: "#" }] })}
+        onClick={() => onChange({ ...safeData, items: [...items, { image: "", caption: "", link: "#" }] })}
         className="w-full"
       >
         <Plus className="h-4 w-4 mr-2" />
@@ -643,9 +644,16 @@ function FollowWorldEditor({ data, onChange }: { data: any; onChange: (d: any) =
 // ─── Atelier Circle Editor ───────────────────────────────────────────────────
 
 function AtelierCircleEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
+  const safeData = data || {
+    title: "",
+    subtitle: "",
+    description: "",
+    image: "",
+    benefits: [],
+    ctaLabel: "",
+  };
 
-  const updateBenefits = (benefits: string[]) => onChange({ ...data, benefits });
+  const updateBenefits = (benefits: string[]) => onChange({ ...safeData, benefits });
 
   return (
     <div className="space-y-4">
@@ -653,42 +661,42 @@ function AtelierCircleEditor({ data, onChange }: { data: any; onChange: (d: any)
         <div>
           <Label className="text-xs mb-1.5 block">Section Title</Label>
           <Input
-            value={data.title || ""}
-            onChange={(e) => onChange({ ...data, title: e.target.value })}
+            value={safeData.title || ""}
+            onChange={(e) => onChange({ ...safeData, title: e.target.value })}
           />
         </div>
         <div>
           <Label className="text-xs mb-1.5 block">Subtitle</Label>
           <Input
-            value={data.subtitle || ""}
-            onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+            value={safeData.subtitle || ""}
+            onChange={(e) => onChange({ ...safeData, subtitle: e.target.value })}
           />
         </div>
       </div>
       <div>
         <Label className="text-xs mb-1.5 block">Description</Label>
         <Textarea
-          value={data.description || ""}
-          onChange={(e) => onChange({ ...data, description: e.target.value })}
+          value={safeData.description || ""}
+          onChange={(e) => onChange({ ...safeData, description: e.target.value })}
           rows={3}
         />
       </div>
       <SingleImageInput
         label="Background Image"
-        value={data.image || ""}
-        onChange={(url) => onChange({ ...data, image: url })}
+        value={safeData.image || ""}
+        onChange={(url) => onChange({ ...safeData, image: url })}
       />
       <div>
         <Label className="text-xs mb-1.5 block">CTA Button Label</Label>
         <Input
-          value={data.ctaLabel || ""}
-          onChange={(e) => onChange({ ...data, ctaLabel: e.target.value })}
+          value={safeData.ctaLabel || ""}
+          onChange={(e) => onChange({ ...safeData, ctaLabel: e.target.value })}
         />
       </div>
       <div>
         <Label className="text-xs mb-1.5 block">Member Benefits (one per line)</Label>
         <Textarea
-          value={(data.benefits || []).join("\n")}
+          value={(safeData.benefits || []).join("\n")}
           onChange={(e) =>
             updateBenefits(e.target.value.split("\n").filter((s) => s.trim()))
           }
@@ -703,21 +711,21 @@ function AtelierCircleEditor({ data, onChange }: { data: any; onChange: (d: any)
 // ─── Simple Header Editor (for New This Season) ──────────────────────────────
 
 function SimpleHeaderEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
+  const safeData = data || { title: "", subtitle: "" };
   return (
     <div className="space-y-4">
       <div>
         <Label className="text-xs mb-1.5 block">Section Title</Label>
         <Input
-          value={data.title || ""}
-          onChange={(e) => onChange({ ...data, title: e.target.value })}
+          value={safeData.title || ""}
+          onChange={(e) => onChange({ ...safeData, title: e.target.value })}
         />
       </div>
       <div>
         <Label className="text-xs mb-1.5 block">Subtitle</Label>
         <Input
-          value={data.subtitle || ""}
-          onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+          value={safeData.subtitle || ""}
+          onChange={(e) => onChange({ ...safeData, subtitle: e.target.value })}
         />
       </div>
       <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-sm">
@@ -730,13 +738,20 @@ function SimpleHeaderEditor({ data, onChange }: { data: any; onChange: (d: any) 
 // ─── Flash Sale Editor ───────────────────────────────────────────────────────
 
 function FlashSaleEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
+  const safeData = data || {
+    title: "",
+    subtitle: "",
+    image: "",
+    endsAt: null,
+    badge: "",
+    enabled: true,
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-sm">
         <Switch
-          checked={data.enabled !== false}
-          onCheckedChange={(v) => onChange({ ...data, enabled: v })}
+          checked={safeData.enabled !== false}
+          onCheckedChange={(v) => onChange({ ...safeData, enabled: v })}
         />
         <Label className="text-sm cursor-pointer">Show flash sale on homepage</Label>
       </div>
@@ -744,15 +759,15 @@ function FlashSaleEditor({ data, onChange }: { data: any; onChange: (d: any) => 
         <div>
           <Label className="text-xs mb-1.5 block">Title</Label>
           <Input
-            value={data.title || ""}
-            onChange={(e) => onChange({ ...data, title: e.target.value })}
+            value={safeData.title || ""}
+            onChange={(e) => onChange({ ...safeData, title: e.target.value })}
           />
         </div>
         <div>
           <Label className="text-xs mb-1.5 block">Subtitle</Label>
           <Input
-            value={data.subtitle || ""}
-            onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+            value={safeData.subtitle || ""}
+            onChange={(e) => onChange({ ...safeData, subtitle: e.target.value })}
           />
         </div>
       </div>
@@ -760,25 +775,25 @@ function FlashSaleEditor({ data, onChange }: { data: any; onChange: (d: any) => 
         <div>
           <Label className="text-xs mb-1.5 block">Badge (e.g. "40% OFF")</Label>
           <Input
-            value={data.badge || ""}
-            onChange={(e) => onChange({ ...data, badge: e.target.value })}
+            value={safeData.badge || ""}
+            onChange={(e) => onChange({ ...safeData, badge: e.target.value })}
           />
         </div>
         <div>
           <Label className="text-xs mb-1.5 block">Sale Ends At (date + time)</Label>
           <Input
             type="datetime-local"
-            value={data.endsAt ? new Date(data.endsAt).toISOString().slice(0, 16) : ""}
+            value={safeData.endsAt ? new Date(safeData.endsAt).toISOString().slice(0, 16) : ""}
             onChange={(e) =>
-              onChange({ ...data, endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })
+              onChange({ ...safeData, endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })
             }
           />
         </div>
       </div>
       <SingleImageInput
         label="Background Image"
-        value={data.image || ""}
-        onChange={(url) => onChange({ ...data, image: url })}
+        value={safeData.image || ""}
+        onChange={(url) => onChange({ ...safeData, image: url })}
       />
     </div>
   );
@@ -787,29 +802,33 @@ function FlashSaleEditor({ data, onChange }: { data: any; onChange: (d: any) => 
 // ─── Announcement Bar Editor ─────────────────────────────────────────────────
 
 function AnnouncementEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  if (!data) return null;
+  const safeData = data || {
+    text: "",
+    link: "",
+    enabled: true,
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-sm">
         <Switch
-          checked={data.enabled !== false}
-          onCheckedChange={(v) => onChange({ ...data, enabled: v })}
+          checked={safeData.enabled !== false}
+          onCheckedChange={(v) => onChange({ ...safeData, enabled: v })}
         />
         <Label className="text-sm cursor-pointer">Show announcement bar at top of page</Label>
       </div>
       <div>
         <Label className="text-xs mb-1.5 block">Announcement Text</Label>
         <Input
-          value={data.text || ""}
-          onChange={(e) => onChange({ ...data, text: e.target.value })}
+          value={safeData.text || ""}
+          onChange={(e) => onChange({ ...safeData, text: e.target.value })}
           placeholder="Complimentary shipping & returns worldwide — Limited time"
         />
       </div>
       <div>
         <Label className="text-xs mb-1.5 block">Link (where it goes when clicked)</Label>
         <Input
-          value={data.link || ""}
-          onChange={(e) => onChange({ ...data, link: e.target.value })}
+          value={safeData.link || ""}
+          onChange={(e) => onChange({ ...safeData, link: e.target.value })}
           placeholder="shop, women, our-story, etc."
         />
       </div>

@@ -4,7 +4,9 @@ import { requireAdmin } from "@/lib/auth";
 import { DEFAULTS } from "@/app/api/site-content/route";
 
 // GET /api/admin/site-content — returns all sections (admin only)
-// Same as public but includes meta like updatedAt
+// Same as public but includes meta like updatedAt.
+// Falls back to defaults if DB is unavailable (e.g. SiteContent table
+// not yet migrated on Turso) so the admin UI still renders.
 export async function GET() {
   const session = await requireAdmin();
   if (!session) {
@@ -12,7 +14,16 @@ export async function GET() {
   }
 
   try {
-    const rows = await db.siteContent.findMany();
+    let rows: any[] = [];
+    try {
+      rows = await db.siteContent.findMany();
+    } catch (dbErr: any) {
+      // SiteContent table probably doesn't exist yet on Turso.
+      // Return defaults so admin can still see and edit them;
+      // saving will work because Prisma upserts will create the row.
+      console.warn("[admin/site-content] DB query failed, returning defaults:", dbErr?.message);
+    }
+
     const all: Record<string, any> = {};
 
     // Start with defaults
@@ -24,7 +35,7 @@ export async function GET() {
       };
     }
 
-    // Override with DB values
+    // Override with DB values (if any rows were returned)
     for (const row of rows) {
       try {
         all[row.section] = {
@@ -39,10 +50,17 @@ export async function GET() {
 
     return NextResponse.json({ sections: all });
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e.message || "Failed to load content" },
-      { status: 500 }
-    );
+    // Last-resort fallback — never return 500, always return defaults
+    // so the admin UI renders something usable.
+    const all: Record<string, any> = {};
+    for (const section of Object.keys(DEFAULTS)) {
+      all[section] = {
+        data: DEFAULTS[section],
+        updatedAt: null,
+        isDefault: true,
+      };
+    }
+    return NextResponse.json({ sections: all, warning: e?.message });
   }
 }
 
@@ -70,17 +88,32 @@ export async function PUT(req: NextRequest) {
         // Skip unknown sections to prevent abuse
         continue;
       }
-      await db.siteContent.upsert({
-        where: { section },
-        create: {
-          section,
-          data: JSON.stringify(data),
-        },
-        update: {
-          data: JSON.stringify(data),
-        },
-      });
-      updated.push(section);
+      try {
+        await db.siteContent.upsert({
+          where: { section },
+          create: {
+            section,
+            data: JSON.stringify(data),
+          },
+          update: {
+            data: JSON.stringify(data),
+          },
+        });
+        updated.push(section);
+      } catch (upsertErr: any) {
+        // If the table doesn't exist yet, the upsert will fail.
+        // Re-throw with a helpful message so admin knows to run migration.
+        if (
+          upsertErr?.message?.includes("no such table") ||
+          upsertErr?.message?.includes("does not exist") ||
+          upsertErr?.message?.includes("SiteContent")
+        ) {
+          throw new Error(
+            "SiteContent table not found in database. Run 'npx prisma db push' on your Turso database to apply the new schema."
+          );
+        }
+        throw upsertErr;
+      }
     }
 
     return NextResponse.json({
