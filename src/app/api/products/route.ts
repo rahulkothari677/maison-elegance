@@ -44,11 +44,22 @@ export async function GET(req: NextRequest) {
 
   let where: any = {};
 
-  // New slug-based filtering (with descendants)
+  // New slug-based filtering (with descendants).
+  // IMPORTANT: also fall back to flat category string matching so that
+  // admin-added products (which may not have a categoryId assigned) still
+  // appear when the user browses "Women", "Men", etc. from the mega menu.
   if (categorySlug && categorySlug !== "all") {
     const ids = await collectCategoryIds(categorySlug);
     if (ids && ids.length > 0) {
-      where.categoryId = { in: ids };
+      // Find the top-level category name (Women / Men / etc.) from the slug
+      // so we can also match flat category strings like "Women".
+      // slug format: "women", "women-dresses", "women-dresses-evening", etc.
+      const topSlug = categorySlug.split("-")[0]; // "women-dresses" -> "women"
+      const topName = topSlug.charAt(0).toUpperCase() + topSlug.slice(1); // "Women"
+      where.OR = [
+        { categoryId: { in: ids } },
+        { category: topName }, // flat-string fallback for uncategorized products
+      ];
     }
   } else if (category && category !== "All") {
     // Legacy fallback: filter by flat category string

@@ -1222,7 +1222,26 @@ function ProductDialog({
               <Label className="text-xs mb-1.5 block">Category *</Label>
               <Select
                 value={form.category}
-                onValueChange={(v) => setForm({ ...form, category: v })}
+                onValueChange={(v) => {
+                  // Auto-pick a structured category matching the flat category
+                  // the admin just selected (e.g. "Women" → "women" slug).
+                  // This ensures the product shows up in the mega menu browse
+                  // flow even if the admin doesn't manually pick one below.
+                  // If admin has already picked a structured category that
+                  // belongs to a different top-level cat, we override it.
+                  const topSlug = v.toLowerCase();
+                  const match =
+                    structuredCats.find((c) => c.slug === topSlug) ||
+                    structuredCats.find(
+                      (c) => c.slug.startsWith(topSlug + "-") &&
+                      c.slug.split("-").length === 2
+                    );
+                  setForm({
+                    ...form,
+                    category: v,
+                    categoryId: match ? match.id : form.categoryId,
+                  });
+                }}
               >
                 <SelectTrigger className="rounded-sm">
                   <SelectValue />
