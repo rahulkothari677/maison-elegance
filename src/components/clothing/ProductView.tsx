@@ -33,6 +33,7 @@ import { ProductCard } from "./ProductCard";
 import { ProductReviews } from "./ProductReviews";
 import { ProductQnA } from "./ProductQnA";
 import { SizeFinder } from "./SizeFinder";
+import { StickyAddToBar, StockCounter, LocationAvailability } from "./UXEnhancements";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -426,14 +427,8 @@ export function ProductView() {
                     </span>
                   </span>
                 </div>
-                {product.inStock <= 10 && (
-                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-sm">
-                    <Sparkles className="h-4 w-4" />
-                    <span className="font-medium">
-                      Only {product.inStock} left — order soon
-                    </span>
-                  </div>
-                )}
+                <LocationAvailability />
+                <StockCounter inStock={product.inStock} />
               </div>
             );
           })()}
@@ -653,6 +648,15 @@ export function ProductView() {
                 Complete look total
               </p>
               <p className="font-serif text-2xl">${lookTotal.toLocaleString()}</p>
+              {(() => {
+                const bundleDiscount = Math.round(lookTotal * 0.1);
+                const bundlePrice = lookTotal - bundleDiscount;
+                return (
+                  <p className="text-xs text-accent mt-1">
+                    Buy together: <span className="font-medium">${bundlePrice.toLocaleString()}</span> (save ${bundleDiscount})
+                  </p>
+                );
+              })()}
             </div>
           </div>
 
@@ -717,6 +721,9 @@ export function ProductView() {
           </div>
         </div>
       )}
+
+      {/* Sticky Add-to-Bar (mobile only) */}
+      <StickyAddToBar product={product} onAddToCart={handleAddToCart} />
     </div>
   );
 }

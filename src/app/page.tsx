@@ -23,6 +23,7 @@ import { CommunityView } from "@/components/clothing/CommunityView";
 import { VisualSearch } from "@/components/clothing/VisualSearch";
 import { SubscriptionBox } from "@/components/clothing/SubscriptionBox";
 import { InfoPage } from "@/components/clothing/InfoPage";
+import { CartWelcomeBack, ExitIntentPopup } from "@/components/clothing/UXEnhancements";
 import { LoadingCinematic } from "@/components/clothing/LoadingCinematic";
 import { CustomCursor } from "@/components/clothing/CustomCursor";
 import { AnimatePresence, motion } from "framer-motion";
@@ -85,6 +86,8 @@ export default function Home() {
       <QuickView />
       <CompareTray />
       <CompareModal />
+      <CartWelcomeBack />
+      <ExitIntentPopup />
       <BackToTop />
       <ConciergeChat />
     </div>

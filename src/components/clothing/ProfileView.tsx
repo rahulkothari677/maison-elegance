@@ -651,10 +651,23 @@ export function ProfileView() {
                           variant="outline"
                           size="sm"
                           className="rounded-sm text-xs"
-                          onClick={() => toast.info("Reorder initiated")}
+                          onClick={() => {
+                            // Reorder: add all items from this order to cart
+                            order.items.forEach((item: any) => {
+                              store.addToCart(
+                                { id: item.productId, name: item.name, price: item.price, images: [item.image], colors: [{ name: item.color, hex: "#000" }], sizes: [item.size] } as any,
+                                item.size,
+                                item.color,
+                                item.quantity
+                              );
+                            });
+                            toast.success(`Added ${order.items.length} items to your bag`, {
+                              description: "From order " + order.orderNumber,
+                            });
+                          }}
                         >
                           <ShoppingBag className="h-3.5 w-3.5 mr-2" />
-                          Reorder
+                          Buy Again
                         </Button>
                         <Button
                           variant="outline"

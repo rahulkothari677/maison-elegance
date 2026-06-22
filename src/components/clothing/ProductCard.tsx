@@ -90,6 +90,11 @@ export function ProductCard({ product }: { product: Product }) {
               {product.badge}
             </span>
           )}
+          {product.compareAtPrice && (
+            <span className="bg-red-600 text-white text-[10px] tracking-wide-luxe uppercase px-3 py-1.5 font-medium">
+              Price Dropped
+            </span>
+          )}
           {veryLowStock && (
             <span className="bg-red-600 text-white text-[10px] tracking-wide-luxe uppercase px-3 py-1.5 font-medium inline-flex items-center gap-1">
               <Zap className="h-2.5 w-2.5" />

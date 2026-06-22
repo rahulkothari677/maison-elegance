@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, ArrowUpRight, Truck, Shield, RefreshCw, Sparkles, Star } from "lucide-react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { ArrowRight, ArrowUpRight, Truck, Shield, RefreshCw, Sparkles, Star, X } from "lucide-react";
 import { products, heroImages, getProductById } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { ProductCard } from "./ProductCard";
 import { FlashSaleSection } from "./FlashSale";
 import { HeroCarousel } from "./HeroCarousel";
 import { OutfitGenerator } from "./OutfitGenerator";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -23,6 +23,7 @@ const stagger = {
 
 export function HomeView() {
   const { setView, setCategory, openProduct, lastViewedProductIds } = useStore();
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const lookbookRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: lookbookRef,
@@ -630,6 +631,7 @@ export function HomeView() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: (i % 6) * 0.05 }}
+                onClick={() => setLightboxImg(img)}
                 className="aspect-square overflow-hidden rounded-sm group cursor-pointer relative"
               >
                 <img
@@ -700,6 +702,33 @@ export function HomeView() {
           </div>
         </div>
       </motion.section>
+
+      {/* Lifestyle Lightbox */}
+      <AnimatePresence>
+        {lightboxImg && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxImg(null)}
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-pointer"
+          >
+            <button
+              onClick={() => setLightboxImg(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              src={lightboxImg}
+              alt="Lifestyle"
+              className="max-w-full max-h-[85vh] object-contain rounded-sm"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
