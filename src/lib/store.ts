@@ -110,6 +110,12 @@ export type AppState = {
   cartBounce: number;
   triggerCartBounce: () => void;
 
+  // Sound + cursor preferences
+  soundEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
+  cursorEnabled: boolean;
+  setCursorEnabled: (enabled: boolean) => void;
+
   // Compare tray (up to 4 products)
   compareIds: string[];
   toggleCompare: (productId: string) => void;
@@ -342,6 +348,12 @@ export const useStore = create<AppState>()(
       // Animation triggers
       cartBounce: 0,
       triggerCartBounce: () => set((state) => ({ cartBounce: state.cartBounce + 1 })),
+
+      // Sound + cursor preferences
+      soundEnabled: true,
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+      cursorEnabled: true,
+      setCursorEnabled: (enabled) => set({ cursorEnabled: enabled }),
 
       // Compare tray (up to 4 products)
       compareIds: [],
@@ -595,6 +607,8 @@ export const useStore = create<AppState>()(
         lastViewedProductIds: state.lastViewedProductIds,
         compareIds: state.compareIds,
         wishlistFolders: state.wishlistFolders,
+        soundEnabled: state.soundEnabled,
+        cursorEnabled: state.cursorEnabled,
       }),
     }
   )

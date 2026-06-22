@@ -6,6 +6,7 @@ import type { Product } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { useUserData } from "@/lib/use-user-data";
 import { useCurrency } from "@/lib/use-currency";
+import { playSound } from "@/lib/sound";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export function ProductCard({ product }: { product: Product }) {
     if (!isWishlisted) {
       setHeartBurst(true);
       setTimeout(() => setHeartBurst(false), 500);
+      playSound("wishlist");
     }
     if (isAuthenticated) {
       toggleApiWishlist(product.id);
@@ -168,6 +170,7 @@ export function ProductCard({ product }: { product: Product }) {
             onClick={(e) => {
               e.stopPropagation();
               addToCart(product, product.sizes[0], product.colors[0].name, 1);
+              playSound("add-to-cart");
             }}
             className="bg-background hover:bg-background/90 text-foreground rounded-none font-medium tracking-wide text-xs uppercase h-9"
           >

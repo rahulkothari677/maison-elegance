@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useCurrency } from "@/lib/use-currency";
+import { playSound } from "@/lib/sound";
 import { getProductById, products } from "@/lib/data";
 import type { SizeOption } from "@/lib/data";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,7 @@ export function ProductView() {
       return;
     }
     addToCart(product, selectedSize, selectedColor, quantity);
+    playSound("add-to-cart");
     toast.success("Added to bag", {
       description: `${product.name} · Size ${selectedSize} · ${selectedColor}`,
     });

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useStore } from "@/lib/store";
 
 export function CustomCursor() {
+  const { cursorEnabled } = useStore();
   const [enabled, setEnabled] = useState(false);
   const [variant, setVariant] = useState<"default" | "hover" | "grab" | "zoom">("default");
   const [hidden, setHidden] = useState(true);
@@ -47,7 +49,7 @@ export function CustomCursor() {
     };
   }, [cursorX, cursorY]);
 
-  if (!enabled) return null;
+  if (!enabled || !cursorEnabled) return null;
 
   const sizes = {
     default: 24,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useStore } from "@/lib/store";
 
 type SoundType = "add-to-cart" | "wishlist" | "navigate" | "success" | "hover" | "toggle";
 
@@ -14,7 +14,6 @@ const SOUND_FREQS: Record<SoundType, { freq: number; duration: number; type: Osc
 };
 
 let audioCtx: AudioContext | null = null;
-let muted = false;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -25,11 +24,18 @@ function getAudioContext(): AudioContext | null {
       return null;
     }
   }
+  // Resume if suspended (browsers auto-suspend until user interaction)
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
   return audioCtx;
 }
 
 export function playSound(type: SoundType) {
-  if (muted) return;
+  // Check store for sound preference
+  const { soundEnabled } = useStore.getState();
+  if (!soundEnabled) return;
+
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -49,24 +55,4 @@ export function playSound(type: SoundType) {
 
   oscillator.start(ctx.currentTime);
   oscillator.stop(ctx.currentTime + config.duration);
-}
-
-export function setMuted(m: boolean) {
-  muted = m;
-}
-
-export function isMuted() {
-  return muted;
-}
-
-// React hook for sound
-export function useSound() {
-  return {
-    play: playSound,
-    muted,
-    toggleMute: () => {
-      muted = !muted;
-      return muted;
-    },
-  };
 }
