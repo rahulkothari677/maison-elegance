@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { ensureSiteContentTable } from "@/lib/ensure-tables";
 
 // Default content for each section. Used when no DB row exists yet
 // (e.g. fresh install). Mirrors the hardcoded values that were in the
@@ -192,6 +193,9 @@ export async function GET(req: NextRequest) {
   const single = searchParams.get("section");
 
   try {
+    // Auto-create the table if it doesn't exist yet (self-healing)
+    await ensureSiteContentTable();
+
     if (single) {
       const row = await db.siteContent.findUnique({
         where: { section: single },

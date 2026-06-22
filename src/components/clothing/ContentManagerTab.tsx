@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Save, RotateCcw, Loader2, Plus, Trash2, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -203,7 +203,6 @@ function SingleImageInput({
   onChange: (url: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -246,29 +245,25 @@ function SingleImageInput({
             placeholder="Paste image URL or upload below..."
             className="text-xs"
           />
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
+          {/* Label-wrapped file input — most reliable cross-browser approach.
+              Clicking the label naturally triggers the file picker. */}
+          <label
+            className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+          >
+            {uploading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ImagePlus className="h-3.5 w-3.5" />
+            )}
+            {uploading ? "Uploading..." : "Upload"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+              onChange={(e) => handleFile(e.target.files)}
+              className="hidden"
               disabled={uploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              {uploading ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Upload
-            </Button>
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-            onChange={(e) => handleFile(e.target.files)}
-            className="hidden"
-          />
+            />
+          </label>
         </div>
       </div>
     </div>

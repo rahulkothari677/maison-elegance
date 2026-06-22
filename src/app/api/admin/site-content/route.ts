@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { ensureSiteContentTable } from "@/lib/ensure-tables";
 import { DEFAULTS } from "@/app/api/site-content/route";
 
 // GET /api/admin/site-content — returns all sections (admin only)
@@ -14,13 +15,13 @@ export async function GET() {
   }
 
   try {
+    // Auto-create the table if it doesn't exist yet (self-healing)
+    await ensureSiteContentTable();
+
     let rows: any[] = [];
     try {
       rows = await db.siteContent.findMany();
     } catch (dbErr: any) {
-      // SiteContent table probably doesn't exist yet on Turso.
-      // Return defaults so admin can still see and edit them;
-      // saving will work because Prisma upserts will create the row.
       console.warn("[admin/site-content] DB query failed, returning defaults:", dbErr?.message);
     }
 
@@ -81,6 +82,9 @@ export async function PUT(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Auto-create the table if it doesn't exist yet (self-healing)
+    await ensureSiteContentTable();
 
     const updated: string[] = [];
     for (const [section, data] of Object.entries(sections)) {
@@ -143,6 +147,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
+    await ensureSiteContentTable();
     await db.siteContent.deleteMany({ where: { section } });
     return NextResponse.json({
       ok: true,
