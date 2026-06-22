@@ -16,7 +16,8 @@ export type View =
   | "order-success"
   | "admin"
   | "community"
-  | "visual-search";
+  | "visual-search"
+  | "subscription";
 
 export type ProfileTab =
   | "overview"

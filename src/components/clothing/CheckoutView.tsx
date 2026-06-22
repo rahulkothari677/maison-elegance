@@ -58,6 +58,14 @@ export function CheckoutView() {
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const selectedPayment = safePaymentMethods.find((p) => p.id === selectedPaymentId);
+  const [stripeStatus, setStripeStatus] = useState<{ configured: boolean } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/stripe/status")
+      .then((r) => r.json())
+      .then((data) => setStripeStatus(data))
+      .catch(() => setStripeStatus({ configured: false }));
+  }, []);
 
   if (cart.length === 0) {
     return (
@@ -75,6 +83,34 @@ export function CheckoutView() {
       </div>
     );
   }
+
+  const handleStripeCheckout = async () => {
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart,
+          total,
+          shippingAddress: selectedAddress
+            ? `${selectedAddress.line1}, ${selectedAddress.city}, ${selectedAddress.state}`
+            : "",
+          email: (session?.user as any)?.email || "guest@maison-elegance.com",
+        }),
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        // Redirect to Stripe Checkout (Apple Pay, Google Pay, cards)
+        window.location.href = data.checkoutUrl;
+      } else {
+        // Demo mode — fall through to regular order
+        toast.info("Stripe not configured. Using demo checkout.");
+        handlePlaceOrder();
+      }
+    } catch (e: any) {
+      toast.error("Payment initialization failed");
+    }
+  };
 
   const handlePlaceOrder = async () => {
     try {
@@ -482,6 +518,42 @@ export function CheckoutView() {
                 </div>
               )}
 
+              {/* Stripe Express Checkout — Apple Pay / Google Pay */}
+              {stripeStatus?.configured && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Express Checkout
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <button
+                    onClick={handleStripeCheckout}
+                    className="w-full h-12 bg-black text-white rounded-sm text-sm font-medium hover:bg-black/90 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </svg>
+                    Pay with Apple Pay
+                  </button>
+                  <button
+                    onClick={handleStripeCheckout}
+                    className="w-full h-12 bg-white border border-border text-foreground rounded-sm text-sm font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 mt-2"
+                  >
+                    <span className="text-blue-500 font-bold">G</span>
+                    Pay with Google Pay
+                  </button>
+                  <div className="flex items-center gap-3 my-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Or pay with card
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <Button
                   variant="ghost"
@@ -492,7 +564,7 @@ export function CheckoutView() {
                   Back
                 </Button>
                 <Button
-                  onClick={handlePlaceOrder}
+                  onClick={stripeStatus?.configured ? handleStripeCheckout : handlePlaceOrder}
                   className="rounded-none h-12 px-10 text-sm tracking-wide-luxe uppercase"
                 >
                   Place Order · ${total.toLocaleString()}

@@ -1,0 +1,37 @@
+{
+  "name": "MAISON ÉLÉGANCE — Premium Clothing",
+  "short_name": "MAISON",
+  "description": "Handcrafted premium apparel from the world's finest ateliers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf7ed",
+  "theme_color": "#2c2418",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "lifestyle", "fashion"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Shop All",
+      "url": "/?view=shop",
+      "description": "Browse the full collection"
+    },
+    {
+      "name": "My Wishlist",
+      "url": "/?view=wishlist",
+      "description": "View your saved pieces"
+    },
+    {
+      "name": "Community",
+      "url": "/?view=community",
+      "description": "Explore the style feed"
+    }
+  ]
+}
