@@ -17,7 +17,8 @@ export type View =
   | "admin"
   | "community"
   | "visual-search"
-  | "subscription";
+  | "subscription"
+  | "info";
 
 export type ProfileTab =
   | "overview"
@@ -108,6 +109,10 @@ export type AppState = {
   profileTab: ProfileTab;
   lastViewedProductIds: string[];
   lastOrderId: string | null;
+
+  // Info page (footer links)
+  infoPageId: string | null;
+  setInfoPage: (id: string) => void;
 
   // Animation triggers (for micro-interactions)
   cartBounce: number;
@@ -347,6 +352,15 @@ export const useStore = create<AppState>()(
       profileTab: "overview",
       lastViewedProductIds: [],
       lastOrderId: null,
+
+      // Info page
+      infoPageId: null,
+      setInfoPage: (id) => {
+        set({ infoPageId: id, view: "info" });
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      },
 
       // Animation triggers
       cartBounce: 0,

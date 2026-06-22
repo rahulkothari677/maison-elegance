@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export function Footer() {
-  const { setView, setCategory } = useStore();
+  const { setView, setCategory, setInfoPage } = useStore();
   const [email, setEmail] = useState("");
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -127,21 +127,20 @@ export function Footer() {
             </h3>
             <ul className="space-y-2.5 text-sm">
               {[
-                "Our Story",
-                "Craftsmanship",
-                "Sustainability",
-                "Ateliers",
-                "Careers",
-                "Press",
+                { label: "Our Story", page: "our-story" },
+                { label: "Craftsmanship", page: "craftsmanship" },
+                { label: "Sustainability", page: "sustainability" },
+                { label: "Ateliers", page: "ateliers" },
+                { label: "Careers", page: "careers" },
+                { label: "Press", page: "press" },
               ].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    className="text-primary-foreground/70 hover:text-accent transition-colors"
+                <li key={item.label}>
+                  <button
+                    onClick={() => setInfoPage(item.page)}
+                    className="text-primary-foreground/70 hover:text-accent transition-colors text-left"
                   >
-                    {item}
-                  </a>
+                    {item.label}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -153,21 +152,20 @@ export function Footer() {
             </h3>
             <ul className="space-y-2.5 text-sm">
               {[
-                "Shipping & Returns",
-                "Size Guide",
-                "Product Care",
-                "Lifetime Repairs",
-                "Personal Stylist",
-                "Contact",
+                { label: "Shipping & Returns", page: "shipping-returns" },
+                { label: "Size Guide", page: "size-guide" },
+                { label: "Product Care", page: "product-care" },
+                { label: "Lifetime Repairs", page: "lifetime-repairs" },
+                { label: "Personal Stylist", page: "personal-stylist" },
+                { label: "Contact", page: "contact" },
               ].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    className="text-primary-foreground/70 hover:text-accent transition-colors"
+                <li key={item.label}>
+                  <button
+                    onClick={() => setInfoPage(item.page)}
+                    className="text-primary-foreground/70 hover:text-accent transition-colors text-left"
                   >
-                    {item}
-                  </a>
+                    {item.label}
+                  </button>
                 </li>
               ))}
             </ul>

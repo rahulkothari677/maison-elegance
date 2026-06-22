@@ -401,13 +401,13 @@ export function HomeView() {
           </motion.div>
 
           <div className="grid grid-cols-12 gap-4 lg:gap-6">
-            {/* Tall left image — spans full height of right column */}
+            {/* Tall left image — matches right column height */}
             <motion.div
               className="col-span-12 md:col-span-5"
             >
               <button
                 onClick={() => openProduct("p1")}
-                className="block w-full h-full group relative overflow-hidden rounded-sm aspect-[3/4] md:aspect-auto md:min-h-[600px]"
+                className="block w-full h-full group relative overflow-hidden rounded-sm aspect-[3/4] md:h-full"
               >
                 <img
                   src={heroImages.editorial1}
@@ -427,8 +427,8 @@ export function HomeView() {
               </button>
             </motion.div>
 
-            {/* Right column — 3 equal images stacked, fills same height as left */}
-            <div className="col-span-12 md:col-span-7 grid grid-rows-3 gap-4 lg:gap-6">
+            {/* Right column — 3 equal images stacked, matches left height */}
+            <div className="col-span-12 md:col-span-7 grid grid-rows-3 gap-4 lg:gap-6 md:h-full">
               {/* Chapter Two */}
               <motion.button
                 onClick={() => openProduct("p2")}

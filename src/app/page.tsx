@@ -22,6 +22,7 @@ import { AdminView } from "@/components/clothing/AdminView";
 import { CommunityView } from "@/components/clothing/CommunityView";
 import { VisualSearch } from "@/components/clothing/VisualSearch";
 import { SubscriptionBox } from "@/components/clothing/SubscriptionBox";
+import { InfoPage } from "@/components/clothing/InfoPage";
 import { LoadingCinematic } from "@/components/clothing/LoadingCinematic";
 import { CustomCursor } from "@/components/clothing/CustomCursor";
 import { AnimatePresence, motion } from "framer-motion";
@@ -35,7 +36,7 @@ const pageTransitions = {
 };
 
 export default function Home() {
-  const { view, setProfileTab } = useStore();
+  const { view, setProfileTab, infoPageId } = useStore();
   const { data: session } = useSession();
   const userEmail = (session?.user as any)?.email || null;
 
@@ -73,6 +74,7 @@ export default function Home() {
             {effectiveView === "community" && <CommunityView />}
             {effectiveView === "visual-search" && <VisualSearch />}
             {effectiveView === "subscription" && <SubscriptionBox />}
+            {effectiveView === "info" && <InfoPage pageId={infoPageId || "our-story"} />}
           </motion.div>
         </AnimatePresence>
       </main>
