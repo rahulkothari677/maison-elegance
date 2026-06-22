@@ -8,25 +8,8 @@
 
 set -e
 
-echo "📦 Generating Prisma client..."
-npx prisma generate
-
-# If Turso credentials are present (Vercel production/preview), construct a
-# Prisma-compatible DATABASE_URL from them. Prisma's libsql adapter expects
-# the URL format: libsql://<host>?authToken=<token>
-if [ -n "$TURSO_DATABASE_URL" ] && [ -n "$TURSO_AUTH_TOKEN" ]; then
-  echo "🌐 Turso credentials detected — pushing schema to Turso..."
-  # Strip the leading "libsql://" or "https://" from TURSO_DATABASE_URL,
-  # then re-add it as "libsql://" with the auth token as a query param.
-  TURSO_HOST=$(echo "$TURSO_DATABASE_URL" | sed -E 's|^https?://||; s|^libsql://||; s|/$||')
-  export DATABASE_URL="libsql://${TURSO_HOST}?authToken=${TURSO_AUTH_TOKEN}"
-  echo "   → DB URL: libsql://${TURSO_HOST}?authToken=***"
-else
-  echo "ℹ️  No Turso credentials — using DATABASE_URL from env (local SQLite)"
-fi
-
-echo "📤 Pushing Prisma schema to database..."
-npx prisma db push
+echo "📦 Generating Prisma client + pushing schema..."
+bash scripts/safe-db-push.sh
 
 echo "🏗️  Building Next.js..."
 npx next build
