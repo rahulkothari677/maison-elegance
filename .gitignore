@@ -67,7 +67,7 @@ download/
 
 # Internal sandbox files (not part of the project)
 skills/
-upload/
+/upload/
 worklog.md
 examples/
 mini-services/.gitkeep

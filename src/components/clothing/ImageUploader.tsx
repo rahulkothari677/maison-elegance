@@ -103,14 +103,14 @@ export function ImageUploader({
             <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm font-medium">Click or drag images here</p>
             <p className="text-xs text-muted-foreground mt-1">
-              JPG, PNG, WebP, GIF · Max 5MB each
+              JPG, PNG, WebP, GIF, AVIF · Max 10MB each
             </p>
           </>
         )}
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
           multiple
           onChange={(e) => handleFile(e.target.files)}
           className="hidden"
