@@ -74,13 +74,8 @@ export function AuthModal({
     }
   };
 
-  const fillDemo = () => {
-    setForm({
-      name: "Isabella Laurent",
-      email: "isabella.laurent@example.com",
-      password: "demo1234",
-    });
-  };
+  // Demo credential shortcut removed for security
+  // Admin access is now protected — users must know the admin email + password
 
   return (
     <AnimatePresence>
@@ -177,6 +172,29 @@ export function AuthModal({
                     Min 8 characters
                   </p>
                 )}
+                {mode === "signin" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const email = prompt("Enter your email to receive a password reset link:");
+                      if (email) {
+                        fetch("/api/auth/forgot-password", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email }),
+                        })
+                          .then((r) => r.json())
+                          .then((data) => {
+                            toast.success(data.message || "Password reset link sent to your email");
+                          })
+                          .catch(() => toast.error("Failed to send reset link"));
+                      }
+                    }}
+                    className="text-[11px] text-accent hover:underline mt-1.5 block text-right ml-auto"
+                  >
+                    Forgot password?
+                  </button>
+                )}
               </div>
 
               <Button
@@ -234,14 +252,7 @@ export function AuthModal({
                 Social login requires API keys (see README for setup)
               </p>
 
-              {/* Demo login */}
-              <button
-                type="button"
-                onClick={fillDemo}
-                className="w-full text-xs text-accent hover:underline text-center"
-              >
-                ✦ Use demo credentials
-              </button>
+              {/* Demo login removed for security — admin access protected */}
 
               <div className="text-center pt-2">
                 <p className="text-xs text-muted-foreground">

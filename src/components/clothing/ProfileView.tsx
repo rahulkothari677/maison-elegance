@@ -120,6 +120,8 @@ export function ProfileView() {
     gender: "",
     avatar: "",
   });
+  const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
+  const [changingPassword, setChangingPassword] = useState(false);
   const [addrDialogOpen, setAddrDialogOpen] = useState(false);
   const [editingAddr, setEditingAddr] = useState<Address | null>(null);
   const [pmDialogOpen, setPmDialogOpen] = useState(false);
@@ -1526,24 +1528,76 @@ export function ProfileView() {
                 <div className="space-y-3">
                   <div>
                     <Label className="text-xs mb-1.5 block">Current Password</Label>
-                    <Input type="password" placeholder="••••••••" className="rounded-sm" />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      className="rounded-sm"
+                      value={passwordForm.current}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                    />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs mb-1.5 block">New Password</Label>
-                      <Input type="password" placeholder="••••••••" className="rounded-sm" />
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        className="rounded-sm"
+                        value={passwordForm.new}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                        minLength={8}
+                      />
                     </div>
                     <div>
                       <Label className="text-xs mb-1.5 block">Confirm New Password</Label>
-                      <Input type="password" placeholder="••••••••" className="rounded-sm" />
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        className="rounded-sm"
+                        value={passwordForm.confirm}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                        minLength={8}
+                      />
                     </div>
                   </div>
                 </div>
                 <Button
                   className="mt-4 rounded-sm"
-                  onClick={() => toast.success("Password updated")}
+                  disabled={changingPassword}
+                  onClick={async () => {
+                    if (passwordForm.new !== passwordForm.confirm) {
+                      toast.error("New passwords don't match");
+                      return;
+                    }
+                    if (passwordForm.new.length < 8) {
+                      toast.error("Password must be at least 8 characters");
+                      return;
+                    }
+                    setChangingPassword(true);
+                    try {
+                      const res = await fetch("/api/auth/change-password", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          currentPassword: passwordForm.current,
+                          newPassword: passwordForm.new,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.ok) {
+                        toast.success("Password changed successfully");
+                        setPasswordForm({ current: "", new: "", confirm: "" });
+                      } else {
+                        toast.error(data.error || "Failed to change password");
+                      }
+                    } catch (e: any) {
+                      toast.error(e.message || "Failed to change password");
+                    } finally {
+                      setChangingPassword(false);
+                    }
+                  }}
                 >
-                  Update Password
+                  {changingPassword ? "Updating..." : "Update Password"}
                 </Button>
               </div>
 
