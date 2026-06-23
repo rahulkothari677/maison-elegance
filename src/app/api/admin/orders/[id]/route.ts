@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 const VALID_STATUSES = [
   "Processing",
   "Confirmed",
+  "Paid",
   "Shipped",
   "Out for Delivery",
   "Delivered",
@@ -30,48 +31,84 @@ export async function PATCH(
     );
   }
 
-  const data: any = {};
-  if (body.status) data.status = body.status;
-  if (body.trackingNumber !== undefined)
-    data.trackingNumber = body.trackingNumber;
-
-  const order = await db.order.update({
-    where: { id },
-    data,
-    include: {
-      items: true,
-      user: { select: { name: true, email: true } },
-    },
-  });
-
-  // Broadcast status update via socket.io (if running)
-  // The mini-service listens for HTTP webhook calls on port 3004
   try {
-    await fetch("http://127.0.0.1:3004/broadcast", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "order:status-changed",
-        room: `order:${order.orderNumber}`,
-        payload: {
-          orderNumber: order.orderNumber,
-          status: order.status,
-          trackingNumber: order.trackingNumber,
-          customerEmail: order.user?.email || order.guestEmail,
-        },
-      }),
-    });
-  } catch (e) {
-    // Socket service may not be running — non-fatal
-    console.log("Socket service not available, skipping broadcast");
-  }
+    // Try Prisma first
+    try {
+      const data: any = { updatedAt: new Date() };
+      if (body.status) data.status = body.status;
+      if (body.trackingNumber !== undefined)
+        data.trackingNumber = body.trackingNumber;
 
-  return NextResponse.json({
-    order: {
-      ...order,
-      customer: order.user
-        ? { name: order.user.name, email: order.user.email }
-        : { name: "Guest", email: order.guestEmail },
-    },
-  });
+      const order = await db.order.update({
+        where: { id },
+        data,
+        include: {
+          items: true,
+          user: { select: { name: true, email: true } },
+        },
+      });
+
+      return NextResponse.json({
+        order: {
+          ...order,
+          customer: order.user
+            ? { name: order.user.name, email: order.user.email }
+            : { name: "Guest", email: order.guestEmail },
+        },
+      });
+    } catch (prismaErr: any) {
+      // Prisma failed — fall back to raw SQL
+      console.warn("[admin/orders/[id]] Prisma update failed, using raw SQL:", prismaErr?.message);
+
+      const updates: string[] = ['"updatedAt" = CURRENT_TIMESTAMP'];
+      const values: any[] = [];
+      let paramIdx = 1;
+
+      if (body.status) {
+        updates.push(`"status" = $${paramIdx++}`);
+        values.push(body.status);
+      }
+      if (body.trackingNumber !== undefined) {
+        updates.push(`"trackingNumber" = $${paramIdx++}`);
+        values.push(body.trackingNumber);
+      }
+      values.push(id);
+
+      await db.$executeRawUnsafe(
+        `UPDATE "Order" SET ${updates.join(", ")} WHERE "id" = $${paramIdx}`,
+        ...values
+      );
+
+      // Fetch the updated order
+      const rows = await db.$queryRawUnsafe(
+        `SELECT * FROM "Order" WHERE "id" = $1`,
+        id
+      );
+      const order = (rows as any[])[0];
+
+      if (!order) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+
+      // Fetch items
+      const items = await db.$queryRawUnsafe(
+        `SELECT * FROM "OrderItem" WHERE "orderId" = $1`,
+        id
+      );
+
+      return NextResponse.json({
+        order: {
+          ...order,
+          customer: { name: "Guest", email: order.guestEmail },
+          items: items,
+        },
+      });
+    }
+  } catch (error: any) {
+    console.error("[admin/orders/[id]] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to update order" },
+      { status: 500 }
+    );
+  }
 }
