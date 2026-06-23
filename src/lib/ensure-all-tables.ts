@@ -275,10 +275,20 @@ async function runMigration(): Promise<void> {
       "total" INTEGER NOT NULL,
       "shippingAddress" TEXT NOT NULL,
       "trackingNumber" TEXT,
+      "paymentId" TEXT,
+      "paymentMethod" TEXT,
+      "refundStatus" TEXT,
+      "refundId" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL
     )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "Order_orderNumber_key" ON "Order"("orderNumber")`,
+
+    // Add missing columns if table already exists (SQLite ALTER TABLE)
+    `ALTER TABLE "Order" ADD COLUMN "paymentId" TEXT`,
+    `ALTER TABLE "Order" ADD COLUMN "paymentMethod" TEXT`,
+    `ALTER TABLE "Order" ADD COLUMN "refundStatus" TEXT`,
+    `ALTER TABLE "Order" ADD COLUMN "refundId" TEXT`,
 
     // ─── OrderItem (with OPTIONAL productId — no FK constraint) ───────
     `CREATE TABLE IF NOT EXISTS "OrderItem" (

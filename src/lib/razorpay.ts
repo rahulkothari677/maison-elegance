@@ -89,3 +89,70 @@ export function verifyPaymentSignature(
     return false;
   }
 }
+
+/**
+ * Process a refund via Razorpay API.
+ *
+ * @param paymentId - Razorpay payment ID (starts with "pay_")
+ * @param amount - Amount to refund in paise (e.g. 299900 for ₹2999)
+ * @param reason - "duplicate" | "fraudulent" | "order_changed" | "customers_request"
+ * @returns Refund details from Razorpay
+ */
+export async function processRefund(
+  paymentId: string,
+  amount: number,
+  reason: string = "customers_request"
+): Promise<{ success: boolean; refundId?: string; status?: string; error?: string }> {
+  const razorpay = getRazorpay();
+  if (!razorpay) {
+    return { success: false, error: "Razorpay not configured" };
+  }
+
+  try {
+    const refund = await razorpay.payments.refund(paymentId, {
+      amount: amount,
+      notes: {
+        reason: reason,
+        refunded_by: "maison-elegance",
+        refunded_at: new Date().toISOString(),
+      },
+    });
+
+    return {
+      success: true,
+      refundId: refund.id,
+      status: refund.status, // "pending", "processed", "failed"
+    };
+  } catch (error: any) {
+    console.error("[razorpay] Refund failed:", error);
+    return {
+      success: false,
+      error: error.message || "Refund processing failed",
+    };
+  }
+}
+
+/**
+ * Fetch refund status from Razorpay.
+ */
+export async function getRefundStatus(
+  paymentId: string
+): Promise<{ status: string; amount?: number } | null> {
+  const razorpay = getRazorpay();
+  if (!razorpay) return null;
+
+  try {
+    const payment = await razorpay.payments.fetch(paymentId);
+    if (payment.refunds?.items?.length > 0) {
+      const latestRefund = payment.refunds.items[0];
+      return {
+        status: latestRefund.status,
+        amount: latestRefund.amount,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("[razorpay] Fetch refund status failed:", error);
+    return null;
+  }
+}

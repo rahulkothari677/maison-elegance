@@ -75,6 +75,8 @@ async function createOrderRaw(params: {
   total: number;
   shippingAddress: string;
   items: any[];
+  paymentId?: string;
+  paymentMethod?: string;
 }): Promise<string> {
   const orderId = randomUUID();
   const now = new Date().toISOString();
@@ -82,13 +84,14 @@ async function createOrderRaw(params: {
   console.log("[createOrderRaw] Starting order creation:", {
     orderNumber: params.orderNumber,
     itemCount: params.items.length,
-    items: params.items.map(i => ({ name: i.name, qty: i.quantity, productId: i.productId })),
+    paymentId: params.paymentId,
+    paymentMethod: params.paymentMethod,
   });
 
-  // Step 1: Insert the order
+  // Insert the order — now includes paymentId, paymentMethod, refundStatus
   try {
     await db.$executeRawUnsafe(
-      `INSERT INTO "Order" ("id", "orderNumber", "userId", "guestEmail", "status", "subtotal", "shipping", "tax", "total", "shippingAddress", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO "Order" ("id", "orderNumber", "userId", "guestEmail", "status", "subtotal", "shipping", "tax", "total", "shippingAddress", "paymentId", "paymentMethod", "refundStatus", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       orderId,
       params.orderNumber,
       params.userId,
@@ -99,6 +102,9 @@ async function createOrderRaw(params: {
       params.tax,
       params.total,
       params.shippingAddress || "Not provided",
+      params.paymentId || null,
+      params.paymentMethod || "razorpay",
+      null, // refundStatus — null until cancelled
       now,
       now
     );
@@ -299,6 +305,8 @@ export async function POST(req: NextRequest) {
         total: orderData.total || 0,
         shippingAddress: orderData.shippingAddress || "Not provided",
         items: orderData.items || [],
+        paymentId: razorpay_payment_id,
+        paymentMethod: paymentMethod,
       });
 
       // Decrement stock for each item

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ensureAllTables } from "@/lib/ensure-all-tables";
+import { processRefund, rupeesToPaise } from "@/lib/razorpay";
 
 /**
  * POST /api/orders/cancel
@@ -82,9 +83,43 @@ export async function POST(req: NextRequest) {
       orderId
     );
 
+    // Auto-process refund if the order was paid via Razorpay
+    try {
+      if (order.paymentId && order.paymentId.startsWith("pay_")) {
+        console.log(`[orders/cancel] Processing refund for payment ${order.paymentId}`);
+
+        const refundResult = await processRefund(
+          order.paymentId,
+          rupeesToPaise(order.total),
+          "customers_request"
+        );
+
+        if (refundResult.success) {
+          await db.$executeRawUnsafe(
+            `UPDATE "Order" SET "refundStatus" = ?, "refundId" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?`,
+            refundResult.status || "pending",
+            refundResult.refundId,
+            orderId
+          );
+          console.log(`[orders/cancel] Refund processed: ${refundResult.refundId}`);
+        } else {
+          await db.$executeRawUnsafe(
+            `UPDATE "Order" SET "refundStatus" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?`,
+            "failed",
+            orderId
+          );
+          console.error(`[orders/cancel] Refund failed:`, refundResult.error);
+        }
+      }
+    } catch (refundErr: any) {
+      console.warn("[orders/cancel] Refund processing error:", refundErr?.message);
+    }
+
     return NextResponse.json({
       ok: true,
-      message: "Order cancelled successfully",
+      message: order.paymentId
+        ? "Order cancelled. Refund initiated — will reflect in 5-7 business days."
+        : "Order cancelled successfully",
       orderNumber: order.orderNumber,
     });
   } catch (error: any) {

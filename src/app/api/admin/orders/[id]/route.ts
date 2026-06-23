@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { ensureAllTables } from "@/lib/ensure-all-tables";
+import { processRefund, rupeesToPaise } from "@/lib/razorpay";
 
 const VALID_STATUSES = [
   "Processing",
@@ -66,9 +67,50 @@ export async function PATCH(
     );
   }
 
-  // Check if this is a cancellation — if so, restore stock
+  // Check if this is a cancellation — if so, restore stock AND process refund
   if (body.status === "Cancelled") {
     await restoreStock(id);
+
+    // Auto-process refund if the order was paid via Razorpay
+    try {
+      const orderRows = await db.$queryRawUnsafe(
+        `SELECT "paymentId", "total", "paymentMethod" FROM "Order" WHERE "id" = ?`,
+        id
+      ) as any[];
+      const order = orderRows[0];
+
+      if (order?.paymentId && order.paymentId.startsWith("pay_")) {
+        // This was a Razorpay payment — process refund
+        console.log(`[cancel] Processing refund for payment ${order.paymentId}, amount: ${order.total}`);
+
+        const refundResult = await processRefund(
+          order.paymentId,
+          rupeesToPaise(order.total),
+          "customers_request"
+        );
+
+        if (refundResult.success) {
+          // Update order with refund details
+          await db.$executeRawUnsafe(
+            `UPDATE "Order" SET "refundStatus" = ?, "refundId" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?`,
+            refundResult.status || "pending",
+            refundResult.refundId,
+            id
+          );
+          console.log(`[cancel] Refund processed: ${refundResult.refundId}, status: ${refundResult.status}`);
+        } else {
+          // Refund failed — mark it
+          await db.$executeRawUnsafe(
+            `UPDATE "Order" SET "refundStatus" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?`,
+            "failed",
+            id
+          );
+          console.error(`[cancel] Refund failed:`, refundResult.error);
+        }
+      }
+    } catch (refundErr: any) {
+      console.warn("[cancel] Refund processing error:", refundErr?.message);
+    }
   }
 
   try {
