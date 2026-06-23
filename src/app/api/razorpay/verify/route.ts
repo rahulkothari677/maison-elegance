@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRazorpay, verifyPaymentSignature } from "@/lib/razorpay";
 import { db } from "@/lib/db";
+import { ensureAllTables } from "@/lib/ensure-all-tables";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { randomUUID } from "crypto";
@@ -205,7 +206,8 @@ export async function POST(req: NextRequest) {
 
     // Create the order in our database using raw SQL
     try {
-      await ensureOrderTables();
+      // Ensure ALL tables exist and match schema (comprehensive migration)
+      await ensureAllTables();
       await createOrderRaw({
         orderNumber,
         userId,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { ensureAllTables } from "@/lib/ensure-all-tables";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -9,6 +10,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const user = session.user as any;
+
+  // Ensure all tables exist before querying
+  await ensureAllTables();
 
   try {
     // Try Prisma first

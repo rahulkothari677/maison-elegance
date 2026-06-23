@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { ensureAllTables } from "@/lib/ensure-all-tables";
 
 export async function GET(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Ensure all tables exist before querying
+  await ensureAllTables();
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");

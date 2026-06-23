@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { ensureAllTables } from "@/lib/ensure-all-tables";
 
 const VALID_STATUSES = [
   "Processing",
@@ -20,6 +21,9 @@ export async function PATCH(
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Ensure all tables exist before updating
+  await ensureAllTables();
 
   const { id } = await params;
   const body = await req.json();
