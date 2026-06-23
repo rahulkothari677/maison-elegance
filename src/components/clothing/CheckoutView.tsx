@@ -59,12 +59,28 @@ export function CheckoutView() {
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const selectedPayment = safePaymentMethods.find((p) => p.id === selectedPaymentId);
   const [stripeStatus, setStripeStatus] = useState<{ configured: boolean } | null>(null);
+  const [razorpayStatus, setRazorpayStatus] = useState<{ configured: boolean; keyId: string | null; isTestMode: boolean } | null>(null);
+  const [razorpayProcessing, setRazorpayProcessing] = useState(false);
 
   useEffect(() => {
     fetch("/api/stripe/status")
       .then((r) => r.json())
       .then((data) => setStripeStatus(data))
       .catch(() => setStripeStatus({ configured: false }));
+
+    // Check Razorpay status
+    fetch("/api/razorpay/status")
+      .then((r) => r.json())
+      .then((data) => setRazorpayStatus(data))
+      .catch(() => setRazorpayStatus({ configured: false, keyId: null, isTestMode: false }));
+
+    // Load Razorpay checkout script
+    if (typeof window !== "undefined") {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, []);
 
   if (cart.length === 0) {
@@ -109,6 +125,140 @@ export function CheckoutView() {
       }
     } catch (e: any) {
       toast.error("Payment initialization failed");
+    }
+  };
+
+  // Razorpay checkout — UPI, cards, netbanking, wallets (India-first)
+  const handleRazorpayCheckout = async () => {
+    if (razorpayProcessing) return;
+    if (!(window as any).Razorpay) {
+      toast.error("Payment system still loading. Please wait 2 seconds and try again.");
+      return;
+    }
+
+    setRazorpayProcessing(true);
+    try {
+      // Step 1: Create order on server
+      const createRes = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart,
+          total,
+          shippingAddress: selectedAddress
+            ? `${selectedAddress.line1}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.postalCode}`
+            : "",
+          email: (session?.user as any)?.email || "guest@maison-elegance.com",
+          currency: "INR",
+        }),
+      });
+      const orderData = await createRes.json();
+
+      if (orderData.demo) {
+        toast.info("Razorpay not configured. Using demo checkout.");
+        handlePlaceOrder();
+        return;
+      }
+
+      if (!orderData.orderId) {
+        throw new Error(orderData.error || "Failed to create order");
+      }
+
+      // Step 2: Open Razorpay checkout modal
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "MAISON ÉLÉGANCE",
+        description: "Premium Clothing & Apparel",
+        image: "/logo.svg",
+        order_id: orderData.orderId,
+        // Prefill customer info
+        prefill: {
+          name: selectedAddress?.fullName || (session?.user as any)?.name || "",
+          email: (session?.user as any)?.email || "",
+          contact: selectedAddress?.phone || "",
+        },
+        notes: {
+          shippingAddress: selectedAddress
+            ? `${selectedAddress.line1}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.postalCode}`
+            : "",
+        },
+        theme: {
+          color: "#1a1a1a",
+        },
+        // Payment methods configuration — India-first
+        method: {
+          upi: true,        // UPI (Google Pay, PhonePe, Paytm, etc.)
+          card: true,       // Credit/Debit cards
+          netbanking: true, // Indian bank net banking
+          wallet: true,     // Paytm, Mobikwik, etc.
+        },
+        handler: async function (response: any) {
+          // Step 3: Verify payment signature on server
+          try {
+            const verifyRes = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderData: {
+                  items: cart.map((c) => ({
+                    productId: c.productId,
+                    name: c.name,
+                    image: c.image,
+                    size: c.size,
+                    color: c.color,
+                    quantity: c.quantity,
+                    price: c.price,
+                  })),
+                  shippingAddress: selectedAddress
+                    ? `${selectedAddress.line1}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.postalCode}`
+                    : "",
+                  subtotal,
+                  shipping: shippingCost,
+                  tax,
+                  total,
+                  email: (session?.user as any)?.email || "guest@maison-elegance.com",
+                },
+              }),
+            });
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.ok) {
+              toast.success("Payment successful! Order confirmed.");
+              // Clear cart and show success view
+              useStore.getState().clearCart();
+              useStore.setState({ lastOrderId: verifyData.orderNumber });
+              setView("order-success");
+            } else {
+              toast.error(verifyData.error || "Payment verification failed");
+            }
+          } catch (e: any) {
+            toast.error("Payment verification failed: " + e.message);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setRazorpayProcessing(false);
+            toast.info("Payment cancelled. Your cart is saved.");
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        setRazorpayProcessing(false);
+        toast.error(
+          response.error?.description || "Payment failed. Please try again."
+        );
+      });
+      rzp.open();
+    } catch (e: any) {
+      setRazorpayProcessing(false);
+      toast.error(e.message || "Payment initialization failed");
     }
   };
 
@@ -547,6 +697,53 @@ export function CheckoutView() {
                 </div>
               )}
 
+              {/* Razorpay Checkout — UPI / Cards / Netbanking (India-first) */}
+              {razorpayStatus?.configured && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Pay with UPI / Card / Netbanking
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <button
+                    onClick={handleRazorpayCheckout}
+                    disabled={razorpayProcessing}
+                    className="w-full h-12 bg-[#0c2451] text-white rounded-sm text-sm font-medium hover:bg-[#0c2451]/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {razorpayProcessing ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                          <path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        Pay with Razorpay
+                        <span className="text-[10px] opacity-75 ml-1">
+                          (UPI · GPay · PhonePe · Cards)
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  {razorpayStatus.isTestMode && (
+                    <p className="text-[10px] text-amber-600 text-center mt-1.5">
+                      ⚠️ Test mode — no real money will be charged. Use card 4111 1111 1111 1111 or any UPI ID.
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3 my-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                      Or use international checkout
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                </div>
+              )}
+
               {/* Stripe Express Checkout — Apple Pay / Google Pay */}
               {stripeStatus?.configured && (
                 <div className="mb-4">
@@ -593,10 +790,24 @@ export function CheckoutView() {
                   Back
                 </Button>
                 <Button
-                  onClick={stripeStatus?.configured ? handleStripeCheckout : handlePlaceOrder}
+                  onClick={
+                    razorpayStatus?.configured
+                      ? handleRazorpayCheckout
+                      : stripeStatus?.configured
+                      ? handleStripeCheckout
+                      : handlePlaceOrder
+                  }
+                  disabled={razorpayProcessing}
                   className="rounded-none h-12 px-10 text-sm tracking-wide-luxe uppercase"
                 >
-                  Place Order · ${total.toLocaleString()}
+                  {razorpayProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Place Order · ${total.toLocaleString()}`
+                  )}
                 </Button>
               </div>
 
