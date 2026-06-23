@@ -28,6 +28,7 @@ import {
   Folder,
   Palette,
   Images,
+  PartyPopper,
   Save,
   RotateCcw,
 } from "lucide-react";
@@ -56,10 +57,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ImageUploader } from "./ImageUploader";
 import { ContentManagerTab } from "./ContentManagerTab";
+import { FestivalThemesTab } from "./FestivalThemesTab";
 import { isClientAdminEmail } from "@/lib/client-admin";
 import { AVAILABLE_FONTS } from "@/lib/use-theme-settings";
 
-type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio" | "content";
+type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio" | "content" | "festival";
 
 type Stats = {
   totalProducts: number;
@@ -234,6 +236,7 @@ export function AdminView() {
             ["customers", "Customers", Users],
             ["categories", "Categories", FolderTree],
             ["content", "Content", Images],
+            ["festival", "Festival", PartyPopper],
             ["themestudio", "Theme Studio", Palette],
           ] as const
         ).map(([id, label, Icon]) => (
@@ -287,6 +290,7 @@ export function AdminView() {
         {tab === "customers" && <CustomersTab />}
         {tab === "categories" && <CategoriesTab />}
         {tab === "content" && <ContentManagerTab />}
+        {tab === "festival" && <FestivalThemesTab />}
         {tab === "themestudio" && <ThemeStudioTab />}
       </motion.div>
     </div>

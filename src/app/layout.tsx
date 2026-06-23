@@ -6,6 +6,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextAuthProvider } from "@/components/next-auth-provider";
 import { ActiveThemeLoader } from "@/components/active-theme-loader";
+import { FestivalBanner } from "@/components/clothing/FestivalBanner";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -70,6 +71,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <NextAuthProvider>
+            <FestivalBanner />
             <ActiveThemeLoader />
             {children}
             <Toaster />

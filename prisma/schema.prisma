@@ -313,3 +313,22 @@ model SiteContent {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
+
+// ─── FESTIVAL THEMES (sale events: Black Friday, Diwali, etc.) ───────────────
+//
+// When isActive=true, the entire app's CSS variables are overridden with
+// the values in `settings`, and a festive banner with countdown appears.
+// Admin can schedule auto-activation via startDate/endDate.
+
+model FestivalTheme {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  label       String
+  description String?
+  settings    String   // JSON: CSS variables + banner config
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

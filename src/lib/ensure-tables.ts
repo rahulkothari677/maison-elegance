@@ -79,3 +79,49 @@ export async function withSiteContentTable<T>(
     throw err;
   }
 }
+
+/**
+ * Ensures the FestivalTheme table exists in the database.
+ * Same self-healing pattern as ensureSiteContentTable.
+ */
+export async function ensureFestivalThemeTable(): Promise<{ created: boolean; error?: string }> {
+  try {
+    await db.$executeRawUnsafe(`SELECT 1 FROM "FestivalTheme" LIMIT 1`);
+    return { created: false };
+  } catch (checkErr: any) {
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS "FestivalTheme" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "label" TEXT NOT NULL,
+        "description" TEXT,
+        "settings" TEXT NOT NULL,
+        "startDate" DATETIME,
+        "endDate" DATETIME,
+        "isActive" BOOLEAN NOT NULL DEFAULT false,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      )
+    `;
+    const createIndexSQL = `
+      CREATE UNIQUE INDEX IF NOT EXISTS "FestivalTheme_name_key" ON "FestivalTheme"("name")
+    `;
+
+    try {
+      await db.$executeRawUnsafe(createTableSQL);
+      await db.$executeRawUnsafe(createIndexSQL);
+      return { created: true };
+    } catch (createErr1: any) {
+      try {
+        await db.$executeRaw`${createTableSQL}`;
+        await db.$executeRaw`${createIndexSQL}`;
+        return { created: true };
+      } catch (createErr2: any) {
+        return {
+          created: false,
+          error: `Failed to create FestivalTheme table: ${createErr2?.message || createErr1?.message || "unknown error"}`,
+        };
+      }
+    }
+  }
+}
