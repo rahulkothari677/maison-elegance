@@ -31,6 +31,7 @@ import {
   PartyPopper,
   Save,
   RotateCcw,
+  Settings,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useStore } from "@/lib/store";
@@ -294,6 +295,7 @@ export function AdminView() {
         {tab === "content" && <ContentManagerTab />}
         {tab === "festival" && <FestivalThemesTab />}
         {tab === "themestudio" && <ThemeStudioTab />}
+        {tab === "settings" && <AdminSettingsTab />}
       </motion.div>
     </div>
   );
