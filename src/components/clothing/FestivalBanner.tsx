@@ -6,6 +6,9 @@ import { X, Sparkles, ArrowRight, Zap, Flame } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { applyFestivalTheme, clearFestivalTheme, type FestivalThemeSettings } from "@/lib/festival-themes";
 import { FestivalParticles } from "./FestivalParticles";
+import { FestivalConfetti } from "./FestivalConfetti";
+import { FestivalSpinWheel } from "./FestivalSpinWheel";
+import { FestivalSounds } from "./FestivalSounds";
 
 type ActiveFestival = {
   id: string;
@@ -107,6 +110,7 @@ const MARQUEE_MESSAGES: Record<string, string[]> = {
 export function FestivalBanner() {
   const [festival, setFestival] = useState<ActiveFestival | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
   const { setView } = useStore();
 
   useEffect(() => {
@@ -124,6 +128,8 @@ export function FestivalBanner() {
         try {
           setFestival(data.theme);
           applyFestivalTheme(data.theme.settings);
+          // Fire confetti burst when festival activates
+          setConfettiTrigger((t) => t + 1);
         } catch (e) {
           console.warn("[FestivalBanner] Failed to apply theme:", e);
         }
@@ -174,6 +180,15 @@ export function FestivalBanner() {
     <>
       {/* Particle effects — fixed overlay across entire viewport */}
       <FestivalParticles themeName={festival.name} />
+
+      {/* Confetti burst — fires once when festival activates */}
+      <FestivalConfetti trigger={confettiTrigger} themeName={festival.name} />
+
+      {/* Spin & Win wheel popup — appears once per day when festival is active */}
+      <FestivalSpinWheel festivalName={festival.name} />
+
+      {/* Festive sound toggle button — bottom-right corner */}
+      <FestivalSounds />
 
       <AnimatePresence>
         <motion.div

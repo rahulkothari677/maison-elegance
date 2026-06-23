@@ -429,3 +429,36 @@
   100% { transform: rotateX(0deg); }
 }
 
+/* Confetti burst */
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Hero shake (subtle, for festival urgency) */
+@keyframes hero-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+.festival-hero-shake {
+  animation: hero-shake 0.5s ease-in-out;
+  animation-delay: 1s;
+}
+
+/* 3D tilt for product cards during festival */
+.festival-tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease-out;
+}
+.festival-tilt-card:hover {
+  transform: perspective(1000px) rotateY(8deg) rotateX(-4deg) scale(1.03);
+}
+.festival-tilt-card:hover .festival-tilt-content {
+  transform: translateZ(40px);
+}
+.festival-tilt-content {
+  transform: translateZ(0);
+  transition: transform 0.2s ease-out;
+}
+

@@ -65,7 +65,10 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <div
-      className="group cursor-pointer rounded-sm transition-all duration-300 hover:shadow-xl"
+      className={cn(
+        "group cursor-pointer rounded-sm transition-all duration-300 hover:shadow-xl",
+        festivalName && "festival-tilt-card"
+      )}
       style={{ borderRadius: "var(--radius)" }}
       onMouseEnter={() => {
         setHovering(true);

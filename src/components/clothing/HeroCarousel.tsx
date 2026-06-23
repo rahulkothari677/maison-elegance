@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useFestivalActive } from "@/lib/use-festival";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,7 @@ const SLIDE_DURATION = 6000;
 
 export function HeroCarousel() {
   const { setCategory, setView, openProduct, setInfoPage } = useStore();
+  const festivalName = useFestivalActive();
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [apiSlides, setApiSlides] = useState<ApiSlide[] | null>(null);
@@ -125,7 +127,10 @@ export function HeroCarousel() {
 
   return (
     <section
-      className="relative h-[88vh] min-h-[600px] overflow-hidden"
+      className={cn(
+        "relative h-[88vh] min-h-[600px] overflow-hidden",
+        festivalName && "festival-hero-shake"
+      )}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
