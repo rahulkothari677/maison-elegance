@@ -47,6 +47,8 @@ const PARTICLE_PRESETS: Record<string, { label: string; emoji: string }> = {
 
 export function FestivalThemeEditor({ themeName, initialSettings, onSave, onActivate, isActive }: EditorProps) {
   const [settings, setSettings] = useState<FestivalThemeSettings>(initialSettings);
+  // Snapshot of the last SAVED version — used by "Restore Saved" button
+  const [savedSnapshot, setSavedSnapshot] = useState<FestivalThemeSettings>(initialSettings);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"banner" | "colors" | "features" | "particles" | "wheel" | "marquee">("banner");
 
@@ -68,6 +70,8 @@ export function FestivalThemeEditor({ themeName, initialSettings, onSave, onActi
     setSaving(true);
     try {
       await onSave(settings);
+      // Update the "saved" snapshot so "Restore Saved" works correctly
+      setSavedSnapshot(JSON.parse(JSON.stringify(settings)));
     } catch (e: any) {
       toast.error(e.message || "Save failed");
     } finally {
@@ -75,13 +79,25 @@ export function FestivalThemeEditor({ themeName, initialSettings, onSave, onActi
     }
   };
 
-  const reset = () => {
+  // Reset to original PRESET defaults (my designed defaults)
+  const resetToDefaults = () => {
+    if (!confirm("Reset ALL settings to the original preset defaults? This will discard your customizations.")) return;
     const fresh = clonePresetSettings(themeName);
     if (fresh) {
       setSettings(fresh);
-      toast.success("Reset to defaults");
+      toast.success("Reset to preset defaults");
     }
   };
+
+  // Restore to the last SAVED version (undo current unsaved edits)
+  const restoreSaved = () => {
+    if (!confirm("Restore to your last saved version? This will discard current unsaved changes.")) return;
+    setSettings(JSON.parse(JSON.stringify(savedSnapshot)));
+    toast.success("Restored to saved version");
+  };
+
+  // Check if there are unsaved changes (compare current settings to saved snapshot)
+  const hasUnsavedChanges = JSON.stringify(settings) !== JSON.stringify(savedSnapshot);
 
   const tabs = [
     { id: "banner", label: "Banner" },
@@ -508,19 +524,45 @@ export function FestivalThemeEditor({ themeName, initialSettings, onSave, onActi
       )}
 
       {/* Save / Activate bar */}
-      <div className="sticky bottom-0 bg-background border-t border-border pt-3 pb-2 flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={reset} disabled={saving}>
-          <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
-        </Button>
-        <div className="flex-1" />
-        {onActivate && !isActive && (
-          <Button type="button" variant="default" size="sm" onClick={onActivate} disabled={saving}>
-            <Eye className="h-3.5 w-3.5 mr-1.5" /> Save & Activate
-          </Button>
+      <div className="sticky bottom-0 bg-background border-t border-border pt-3 pb-2 space-y-2">
+        {/* Unsaved changes indicator */}
+        {hasUnsavedChanges && (
+          <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-sm">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            You have unsaved changes
+          </div>
         )}
-        <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
-          <Save className="h-3.5 w-3.5 mr-1.5" /> {saving ? "Saving..." : "Save"}
-        </Button>
+        <div className="flex gap-2 items-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={restoreSaved}
+            disabled={saving || !hasUnsavedChanges}
+            title="Restore to your last saved version"
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Restore Saved
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={resetToDefaults}
+            disabled={saving}
+            title="Reset ALL settings to the original preset defaults"
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset to Defaults
+          </Button>
+          <div className="flex-1" />
+          {onActivate && !isActive && (
+            <Button type="button" variant="default" size="sm" onClick={onActivate} disabled={saving}>
+              <Eye className="h-3.5 w-3.5 mr-1.5" /> Save & Activate
+            </Button>
+          )}
+          <Button type="button" size="sm" onClick={handleSave} disabled={saving || !hasUnsavedChanges}>
+            <Save className="h-3.5 w-3.5 mr-1.5" /> {saving ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </div>
     </div>
   );
