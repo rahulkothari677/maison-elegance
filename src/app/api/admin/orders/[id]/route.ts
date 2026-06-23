@@ -11,6 +11,10 @@ const VALID_STATUSES = [
   "Shipped",
   "Out for Delivery",
   "Delivered",
+  "Return Requested",
+  "Return Approved",
+  "Return Rejected",
+  "Refund Completed",
   "Cancelled",
 ];
 
@@ -67,20 +71,36 @@ export async function PATCH(
     );
   }
 
-  // Check if this is a cancellation — if so, restore stock AND process refund
+  // Check if this is a cancellation — only allow if not yet shipped
   if (body.status === "Cancelled") {
+    // Fetch current order status
+    const currentOrder = await db.$queryRawUnsafe(
+      `SELECT "status", "paymentId", "total" FROM "Order" WHERE "id" = ?`,
+      id
+    ) as any[];
+    const order = currentOrder[0];
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Block cancellation if already shipped/delivered
+    const shippedStatuses = ["Shipped", "Out for Delivery", "Delivered"];
+    if (shippedStatuses.includes(order.status)) {
+      return NextResponse.json(
+        {
+          error: `Cannot cancel order with status "${order.status}". Use "Return" flow for delivered orders, or contact courier for RTO if in transit.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Only restore stock + refund if order was cancellable
     await restoreStock(id);
 
     // Auto-process refund if the order was paid via Razorpay
     try {
-      const orderRows = await db.$queryRawUnsafe(
-        `SELECT "paymentId", "total", "paymentMethod" FROM "Order" WHERE "id" = ?`,
-        id
-      ) as any[];
-      const order = orderRows[0];
-
       if (order?.paymentId && order.paymentId.startsWith("pay_")) {
-        // This was a Razorpay payment — process refund
         console.log(`[cancel] Processing refund for payment ${order.paymentId}, amount: ${order.total}`);
 
         const refundResult = await processRefund(
@@ -90,7 +110,6 @@ export async function PATCH(
         );
 
         if (refundResult.success) {
-          // Update order with refund details
           await db.$executeRawUnsafe(
             `UPDATE "Order" SET "refundStatus" = ?, "refundId" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?`,
             refundResult.status || "pending",
@@ -99,7 +118,6 @@ export async function PATCH(
           );
           console.log(`[cancel] Refund processed: ${refundResult.refundId}, status: ${refundResult.status}`);
         } else {
-          // Refund failed — mark it
           await db.$executeRawUnsafe(
             `UPDATE "Order" SET "refundStatus" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?`,
             "failed",
