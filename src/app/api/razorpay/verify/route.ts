@@ -93,7 +93,7 @@ async function createOrderRaw(params: {
       params.orderNumber,
       params.userId,
       params.guestEmail,
-      "Paid",
+      "Confirmed",
       params.subtotal,
       params.shipping,
       params.tax,
