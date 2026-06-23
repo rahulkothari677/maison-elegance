@@ -95,10 +95,13 @@ export function FestivalBanner() {
     }
   }, [festival?.endDate]);
 
+  // ⚠️ Hooks must be called BEFORE any early return (Rules of Hooks).
+  // useCountdown is called unconditionally — it safely handles null endDate.
+  const { timeLeft, active } = useCountdown(festival?.endDate || null);
+
   if (!festival || dismissed) return null;
 
   const { banner } = festival.settings;
-  const { timeLeft, active } = useCountdown(festival.endDate);
   const pad = (n: number) => String(n).padStart(2, "0");
 
   const handleCta = () => {
