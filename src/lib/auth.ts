@@ -8,14 +8,51 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
 // Admin emails — anyone with one of these can access /admin
-const ADMIN_EMAILS = [
-  "isabella.laurent@example.com", // demo user is admin for testing
+// Can be managed via Admin Settings tab (stored in DB) or env var
+const DEFAULT_ADMIN_EMAILS = [
+  "rahulkothari677@gmail.com", // primary admin (you)
   "admin@maison-elegance.com",
 ];
+
+// Also check ADMIN_EMAILS env var (comma-separated) for additional admins
+const envAdminEmails = process.env.ADMIN_EMAILS
+  ? process.env.ADMIN_EMAILS.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+  : [];
+
+const ADMIN_EMAILS = [...DEFAULT_ADMIN_EMAILS, ...envAdminEmails];
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
   return ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
+export function getAdminEmails(): string[] {
+  return ADMIN_EMAILS;
+}
+
+/**
+ * Check if email is admin — including DB-added admins.
+ * Use this for runtime admin checks (API routes).
+ * isAdminEmail() is synchronous and only checks code/env admins.
+ */
+export async function isAdminEmailAsync(email?: string | null): Promise<boolean> {
+  if (!email) return false;
+  const emailLower = email.toLowerCase();
+
+  // Check code/env admins first (fast)
+  if (ADMIN_EMAILS.includes(emailLower)) return true;
+
+  // Check DB-added admins
+  try {
+    const { db } = await import("./db");
+    const rows = await db.$queryRawUnsafe(
+      `SELECT * FROM "AdminEmail" WHERE "email" = ?`,
+      emailLower
+    ) as any[];
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function requireAdmin() {

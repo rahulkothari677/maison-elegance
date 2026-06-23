@@ -411,6 +411,26 @@ async function runMigration(): Promise<void> {
       "updatedAt" DATETIME NOT NULL
     )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "FestivalTheme_name_key" ON "FestivalTheme"("name")`,
+
+    // ─── AdminActivity (audit log) ────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS "AdminActivity" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "adminEmail" TEXT NOT NULL,
+      "action" TEXT NOT NULL,
+      "entityType" TEXT,
+      "entityId" TEXT,
+      "details" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // ─── AdminEmail (manage who has admin access) ────────────────────
+    `CREATE TABLE IF NOT EXISTS "AdminEmail" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "email" TEXT NOT NULL,
+      "addedBy" TEXT,
+      "addedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "AdminEmail_email_key" ON "AdminEmail"("email")`,
   ];
 
   for (const sql of statements) {

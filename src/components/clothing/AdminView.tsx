@@ -58,10 +58,11 @@ import { cn } from "@/lib/utils";
 import { ImageUploader } from "./ImageUploader";
 import { ContentManagerTab } from "./ContentManagerTab";
 import { FestivalThemesTab } from "./FestivalThemesTab";
+import { AdminSettingsTab } from "./AdminSettingsTab";
 import { isClientAdminEmail } from "@/lib/client-admin";
 import { AVAILABLE_FONTS } from "@/lib/use-theme-settings";
 
-type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio" | "content" | "festival";
+type AdminTab = "overview" | "products" | "orders" | "customers" | "categories" | "themestudio" | "content" | "festival" | "settings";
 
 type Stats = {
   totalProducts: number;
@@ -238,6 +239,7 @@ export function AdminView() {
             ["content", "Content", Images],
             ["festival", "Festival", PartyPopper],
             ["themestudio", "Theme Studio", Palette],
+            ["settings", "Settings", Settings],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
