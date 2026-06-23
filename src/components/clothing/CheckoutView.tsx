@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   Check,
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 
 export function CheckoutView() {
   const storeState = useStore();
+  const { data: session } = useSession();
   const { cart, setView, clearCart } = storeState;
   const {
     addresses,
