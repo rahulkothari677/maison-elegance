@@ -107,6 +107,7 @@ export function ProfileView() {
     deleteAddress,
     toggleWishlist,
     updateProfile,
+    refreshAll,
   } = useUserData();
 
   const [authOpen, setAuthOpen] = useState(false);
@@ -685,6 +686,35 @@ export function ProfileView() {
                             onClick={() => toast.info("Return flow started")}
                           >
                             Return Item
+                          </Button>
+                        )}
+                        {(order.status === "Confirmed" || order.status === "Processing" || order.status === "Paid") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-sm text-xs text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              if (!confirm(`Cancel order ${order.orderNumber}? This will restore the items to your cart and refund any payment.`)) return;
+                              try {
+                                const res = await fetch("/api/orders/cancel", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ orderId: order.id }),
+                                });
+                                const data = await res.json();
+                                if (data.ok) {
+                                  toast.success("Order cancelled successfully");
+                                  // Refresh orders
+                                  refreshAll();
+                                } else {
+                                  toast.error(data.error || "Failed to cancel order");
+                                }
+                              } catch (e: any) {
+                                toast.error(e.message || "Failed to cancel order");
+                              }
+                            }}
+                          >
+                            Cancel Order
                           </Button>
                         )}
                       </div>

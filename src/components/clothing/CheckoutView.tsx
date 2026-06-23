@@ -328,6 +328,53 @@ export function CheckoutView() {
     }
   };
 
+  // Cash on Delivery — create order with status "Confirmed (COD)"
+  const handleCodOrder = async () => {
+    if (!confirm("Place this order with Cash on Delivery? You'll pay when the order is delivered.")) return;
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.map((c) => ({
+            productId: c.productId,
+            name: c.name,
+            image: c.image,
+            size: c.size,
+            color: c.color,
+            quantity: c.quantity,
+            price: c.price,
+          })),
+          shippingAddress: selectedAddress
+            ? `${selectedAddress.line1}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.postalCode}`
+            : "",
+          subtotal,
+          shipping: shippingCost,
+          tax,
+          total,
+          paymentMethod: "COD",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to place order");
+      }
+
+      const data = await res.json();
+      const orderId = data.order.orderNumber;
+
+      // Clear cart and show success
+      clearCart();
+      refreshAll();
+      toast.success("Order placed with Cash on Delivery!", {
+        description: `Order ${orderId} — pay ₹${total} on delivery`,
+      });
+      setView("order-success");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to place order");
+    }
+  };
+
   const steps = [
     { num: 1, label: "Shipping", icon: Truck },
     { num: 2, label: "Payment", icon: CreditCard },
@@ -801,6 +848,31 @@ export function CheckoutView() {
                   </div>
                 </div>
               )}
+
+              {/* Cash on Delivery option */}
+              <div className="mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-[10px] tracking-wide-luxe uppercase text-muted-foreground">
+                    Or Pay on Delivery
+                  </span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <button
+                  onClick={handleCodOrder}
+                  className="w-full h-12 bg-white border-2 border-border text-foreground rounded-sm text-sm font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M6 12h.01M18 12h.01"/>
+                  </svg>
+                  Cash on Delivery
+                  <span className="text-[10px] text-muted-foreground ml-1">
+                    (Pay when delivered)
+                  </span>
+                </button>
+              </div>
 
               <div className="flex justify-between">
                 <Button

@@ -13,6 +13,37 @@ const VALID_STATUSES = [
   "Cancelled",
 ];
 
+/**
+ * Restores product stock when an order is cancelled.
+ * Adds back the quantity of each item to Product.inStock.
+ */
+async function restoreStock(orderId: string) {
+  try {
+    // Fetch all items for this order
+    const items = await db.$queryRawUnsafe(
+      `SELECT "productId", "quantity" FROM "OrderItem" WHERE "orderId" = ?`,
+      orderId
+    ) as any[];
+
+    for (const item of items) {
+      if (!item.productId || item.productId === "unknown") continue;
+      try {
+        await db.$executeRawUnsafe(
+          `UPDATE "Product" SET "inStock" = "inStock" + ? WHERE "id" = ? OR "slug" = ?`,
+          item.quantity,
+          item.productId,
+          item.productId
+        );
+        console.log(`[restoreStock] Restored ${item.quantity} to product ${item.productId}`);
+      } catch (e) {
+        // Product might not exist in DB — non-fatal
+      }
+    }
+  } catch (e) {
+    console.warn("[restoreStock] Failed:", e);
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -33,6 +64,11 @@ export async function PATCH(
       { error: `Invalid status. Valid: ${VALID_STATUSES.join(", ")}` },
       { status: 400 }
     );
+  }
+
+  // Check if this is a cancellation — if so, restore stock
+  if (body.status === "Cancelled") {
+    await restoreStock(id);
   }
 
   try {
