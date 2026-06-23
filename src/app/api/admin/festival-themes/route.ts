@@ -35,11 +35,20 @@ export async function GET() {
     // Combine presets with DB state
     const allThemes = Object.entries(FESTIVAL_PRESETS).map(([name, preset]) => {
       const dbTheme = dbByName[name];
+      // If we have saved settings in DB, use those; otherwise use preset defaults
+      let settings = preset.settings;
+      if (dbTheme?.settings) {
+        try {
+          settings = JSON.parse(dbTheme.settings);
+        } catch {
+          // keep preset if DB settings are broken
+        }
+      }
       return {
         name,
         label: preset.label,
         description: preset.description,
-        settings: preset.settings,
+        settings,
         isActive: dbTheme?.isActive || false,
         startDate: dbTheme?.startDate || null,
         endDate: dbTheme?.endDate || null,
@@ -90,28 +99,13 @@ export async function PUT(req: NextRequest) {
     }
 
     const preset = FESTIVAL_PRESETS[name];
-    const settingsJson = JSON.stringify(preset.settings);
+    // Use custom settings if provided, otherwise use preset defaults
+    const customSettings = body.settings;
+    const settingsToUse = customSettings || preset.settings;
+    const settingsJson = JSON.stringify(settingsToUse);
 
     // Ensure the table exists
-    try {
-      await db.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS "FestivalTheme" (
-          "id" TEXT NOT NULL PRIMARY KEY,
-          "name" TEXT NOT NULL,
-          "label" TEXT NOT NULL,
-          "description" TEXT,
-          "settings" TEXT NOT NULL,
-          "startDate" DATETIME,
-          "endDate" DATETIME,
-          "isActive" BOOLEAN NOT NULL DEFAULT false,
-          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" DATETIME NOT NULL
-        )
-      `);
-      await db.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "FestivalTheme_name_key" ON "FestivalTheme"("name")`);
-    } catch (e) {
-      // Table might already exist — continue
-    }
+    await ensureFestivalThemeTable();
 
     if (action === "activate") {
       // Deactivate all other themes

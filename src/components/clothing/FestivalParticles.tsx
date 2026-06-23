@@ -15,18 +15,25 @@ import { motion, AnimatePresence } from "framer-motion";
  * Pure CSS animations for performance. Particles are generated once with
  * random positions/delays and never re-render.
  */
-export function FestivalParticles({ themeName }: { themeName: string }) {
+export function FestivalParticles({
+  themeName,
+  count = 30,
+  duration = 10,
+}: {
+  themeName: string;
+  count?: number;
+  duration?: number;
+}) {
   const particles = useMemo(() => {
-    const count = 30;
     return Array.from({ length: count }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       delay: Math.random() * 10,
-      duration: 8 + Math.random() * 12,
+      duration: duration + Math.random() * 6,
       size: 4 + Math.random() * 8,
       opacity: 0.4 + Math.random() * 0.5,
     }));
-  }, []);
+  }, [count, duration]);
 
   const particleStyle = (p: any) => {
     const base: any = {

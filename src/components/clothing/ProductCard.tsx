@@ -27,7 +27,11 @@ export function ProductCard({ product }: { product: Product }) {
     toggleWishlist: toggleApiWishlist,
   } = useUserData();
   const { convert } = useCurrency();
-  const festivalName = useFestivalActive();
+  const festival = useFestivalActive();
+  const festivalName = festival?.name || null;
+  const festivalSettings = festival?.settings;
+  const tiltEnabled = festivalSettings?.features?.tilt !== false;
+  const stampsEnabled = festivalSettings?.features?.saleStamps !== false;
   const [imgIdx, setImgIdx] = useState(0);
   const [hovering, setHovering] = useState(false);
   const [activeColor, setActiveColor] = useState(0);
@@ -67,7 +71,7 @@ export function ProductCard({ product }: { product: Product }) {
     <div
       className={cn(
         "group cursor-pointer rounded-sm transition-all duration-300 hover:shadow-xl",
-        festivalName && "festival-tilt-card"
+        festivalName && tiltEnabled && "festival-tilt-card"
       )}
       style={{ borderRadius: "var(--radius)" }}
       onMouseEnter={() => {
@@ -114,7 +118,7 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Festival sale stamp — appears on top-right when a festival is active */}
-        {festivalName && product.compareAtPrice && (
+        {festivalName && stampsEnabled && product.compareAtPrice && (
           <div
             className="absolute top-3 right-14 sm:right-14 z-10 pointer-events-none"
             style={{

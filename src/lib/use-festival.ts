@@ -3,24 +3,29 @@
 import { useState, useEffect } from "react";
 
 /**
- * useFestivalActive — returns the active festival name (if any).
+ * useFestivalActive — returns the active festival name + settings (if any).
  * Used by product cards, hero sections, etc. to show festival-specific
- * overlays like floating "X% OFF" stamps.
+ * overlays like floating "X% OFF" stamps and 3D tilt.
  *
  * Caches the result in module-level state so we only fetch once.
  */
 
-let cachedFestival: string | null | undefined = undefined;
-const listeners = new Set<(v: string | null) => void>();
+type FestivalInfo = {
+  name: string;
+  settings: any;
+} | null;
 
-export function useFestivalActive(): string | null {
-  const [festivalName, setFestivalName] = useState<string | null>(
+let cachedFestival: FestivalInfo = undefined;
+const listeners = new Set<(v: FestivalInfo) => void>();
+
+export function useFestivalActive(): FestivalInfo {
+  const [festival, setFestival] = useState<FestivalInfo>(
     cachedFestival === undefined ? null : cachedFestival
   );
 
   useEffect(() => {
     if (cachedFestival !== undefined) {
-      setFestivalName(cachedFestival);
+      setFestival(cachedFestival);
       return;
     }
 
@@ -29,15 +34,17 @@ export function useFestivalActive(): string | null {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!mounted) return;
-        const name = data?.theme?.name || null;
-        cachedFestival = name;
-        setFestivalName(name);
-        listeners.forEach((fn) => fn(name));
+        const info: FestivalInfo = data?.theme
+          ? { name: data.theme.name, settings: data.theme.settings }
+          : null;
+        cachedFestival = info;
+        setFestival(info);
+        listeners.forEach((fn) => fn(info));
       })
       .catch(() => {
         if (!mounted) return;
         cachedFestival = null;
-        setFestivalName(null);
+        setFestival(null);
       });
 
     return () => {
@@ -45,5 +52,5 @@ export function useFestivalActive(): string | null {
     };
   }, []);
 
-  return festivalName;
+  return festival;
 }

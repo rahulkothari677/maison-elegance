@@ -5,71 +5,90 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Gift, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import type { SpinWheelSegment } from "@/lib/festival-themes";
 
 /**
- * FestivalSpinWheel — a popup that shows a spinning wheel where users
- * can win coupon codes. Appears once per session when a festival is active.
- *
- * The wheel has 8 segments with different prizes:
- * - 10% OFF, 15% OFF, 20% OFF, FREE SHIPPING, 25% OFF, 30% OFF,
- *   FREE GIFT, 50% OFF (jackpot)
- *
- * Each user gets 1 spin per day (stored in localStorage).
+ * FestivalSpinWheel — a popup with a spinning wheel where users can win
+ * coupon codes. Configurable via props (segments, probabilities, title).
  */
 
-const SEGMENTS = [
-  { label: "10% OFF", code: "SAVE10", color: "#FF6B6B" },
-  { label: "15% OFF", code: "SAVE15", color: "#4ECDC4" },
-  { label: "FREE SHIP", code: "FREESHIP", color: "#FFE66D" },
-  { label: "20% OFF", code: "SAVE20", color: "#A8E6CF" },
-  { label: "FREE GIFT", code: "FREEGIFT", color: "#FF8B94" },
-  { label: "25% OFF", code: "SAVE25", color: "#C7CEEA" },
-  { label: "30% OFF", code: "SAVE30", color: "#FFD93D" },
-  { label: "50% OFF", code: "JACKPOT50", color: "#FF1744" },
+const DEFAULT_SEGMENTS: SpinWheelSegment[] = [
+  { label: "10% OFF", code: "SAVE10", color: "#FF6B6B", probability: 20 },
+  { label: "15% OFF", code: "SAVE15", color: "#4ECDC4", probability: 15 },
+  { label: "FREE SHIP", code: "FREESHIP", color: "#FFE66D", probability: 20 },
+  { label: "20% OFF", code: "SAVE20", color: "#A8E6CF", probability: 15 },
+  { label: "FREE GIFT", code: "FREEGIFT", color: "#FF8B94", probability: 10 },
+  { label: "25% OFF", code: "SAVE25", color: "#C7CEEA", probability: 10 },
+  { label: "30% OFF", code: "SAVE30", color: "#FFD93D", probability: 8 },
+  { label: "50% OFF", code: "JACKPOT50", color: "#FF1744", probability: 2 },
 ];
 
-export function FestivalSpinWheel({ festivalName }: { festivalName: string }) {
+export function FestivalSpinWheel({
+  festivalName,
+  enabled = true,
+  title = "Spin & Win!",
+  subtitle = "One free spin — win an exclusive festival coupon code",
+  spinOncePerDay = true,
+  segments = DEFAULT_SEGMENTS,
+}: {
+  festivalName: string;
+  enabled?: boolean;
+  title?: string;
+  subtitle?: string;
+  spinOncePerDay?: boolean;
+  segments?: SpinWheelSegment[];
+}) {
   const [show, setShow] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState<typeof SEGMENTS[0] | null>(null);
+  const [result, setResult] = useState<SpinWheelSegment | null>(null);
   const [copied, setCopied] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!festivalName) return;
-    // Show popup after 5 seconds, once per day per user
-    const key = `festival-spin-${festivalName}-${new Date().toDateString()}`;
-    const alreadySpun = localStorage.getItem(key);
-    if (alreadySpun) return;
-
+    if (!festivalName || !enabled) return;
+    const key = `festival-spin-${festivalName}-${spinOncePerDay ? new Date().toDateString() : ""}`;
+    if (spinOncePerDay) {
+      const alreadySpun = localStorage.getItem(key);
+      if (alreadySpun) return;
+    }
     const timer = setTimeout(() => setShow(true), 5000);
     return () => clearTimeout(timer);
-  }, [festivalName]);
+  }, [festivalName, enabled, spinOncePerDay]);
+
+  if (!enabled) return null;
 
   const spin = () => {
     if (spinning) return;
     setSpinning(true);
     setResult(null);
 
-    // Pick a random segment
-    const winningIndex = Math.floor(Math.random() * SEGMENTS.length);
-    const segmentAngle = 360 / SEGMENTS.length;
-    // The pointer is at the top (0deg). We want the winning segment to land there.
-    // Each segment center is at: index * segmentAngle + segmentAngle/2
-    // To bring it to top (0deg), rotate by: 360 - (center) + extra full spins
+    // Pick a winner based on probability weights
+    const totalWeight = segments.reduce((sum, s) => sum + s.probability, 0);
+    let random = Math.random() * totalWeight;
+    let winningIndex = 0;
+    for (let i = 0; i < segments.length; i++) {
+      random -= segments[i].probability;
+      if (random <= 0) {
+        winningIndex = i;
+        break;
+      }
+    }
+
+    const segmentAngle = 360 / segments.length;
     const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
-    const fullSpins = 5 + Math.floor(Math.random() * 3); // 5-7 full spins
+    const fullSpins = 5 + Math.floor(Math.random() * 3);
     const finalRotation = rotation + fullSpins * 360 + targetAngle - (rotation % 360);
 
     setRotation(finalRotation);
 
     setTimeout(() => {
       setSpinning(false);
-      setResult(SEGMENTS[winningIndex]);
-      // Mark as spun for today
-      const key = `festival-spin-${festivalName}-${new Date().toDateString()}`;
-      localStorage.setItem(key, "1");
+      setResult(segments[winningIndex]);
+      const key = `festival-spin-${festivalName}-${spinOncePerDay ? new Date().toDateString() : ""}`;
+      if (spinOncePerDay) {
+        localStorage.setItem(key, "1");
+      }
     }, 4000);
   };
 
@@ -122,10 +141,8 @@ export function FestivalSpinWheel({ festivalName }: { festivalName: string }) {
               >
                 <Gift className="h-6 w-6" />
               </div>
-              <h3 className="font-serif text-2xl font-bold">Spin & Win!</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                One free spin — win an exclusive festival coupon code
-              </p>
+              <h3 className="font-serif text-2xl font-bold">{title}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
             </div>
 
             {/* The wheel */}
@@ -154,16 +171,16 @@ export function FestivalSpinWheel({ festivalName }: { festivalName: string }) {
                   borderColor: "var(--accent)",
                   transform: `rotate(${rotation}deg)`,
                   transition: spinning ? "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
-                  background: `conic-gradient(${SEGMENTS.map((s, i) => {
-                    const start = (i / SEGMENTS.length) * 360;
-                    const end = ((i + 1) / SEGMENTS.length) * 360;
+                  background: `conic-gradient(${segments.map((s, i) => {
+                    const start = (i / segments.length) * 360;
+                    const end = ((i + 1) / segments.length) * 360;
                     return `${s.color} ${start}deg ${end}deg`;
                   }).join(", ")})`,
                 }}
               >
                 {/* Segment labels */}
-                {SEGMENTS.map((seg, i) => {
-                  const angle = (i / SEGMENTS.length) * 360 + (360 / SEGMENTS.length) / 2;
+                {segments.map((seg, i) => {
+                  const angle = (i / segments.length) * 360 + (360 / segments.length) / 2;
                   return (
                     <div
                       key={i}

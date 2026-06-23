@@ -154,8 +154,11 @@ export function FestivalBanner() {
 
   const marqueeMessages = useMemo(() => {
     if (!festival) return [];
-    return MARQUEE_MESSAGES[festival.name] || MARQUEE_MESSAGES["black-friday"];
-  }, [festival?.name]);
+    // Use custom messages from settings if available, else fallback to hardcoded
+    return festival.settings.marqueeConfig?.messages || MARQUEE_MESSAGES[festival.name] || MARQUEE_MESSAGES["black-friday"];
+  }, [festival?.name, festival?.settings.marqueeConfig?.messages]);
+
+  const marqueeSpeed = festival?.settings.marqueeConfig?.speed || 20;
 
   if (!festival || dismissed) return null;
 
@@ -179,16 +182,33 @@ export function FestivalBanner() {
   return (
     <>
       {/* Particle effects — fixed overlay across entire viewport */}
-      <FestivalParticles themeName={festival.name} />
+      {festival.settings.features?.particles !== false && (
+        <FestivalParticles
+          themeName={festival.name}
+          count={festival.settings.particleConfig?.count || 30}
+          duration={festival.settings.particleConfig?.duration || 10}
+        />
+      )}
 
       {/* Confetti burst — fires once when festival activates */}
-      <FestivalConfetti trigger={confettiTrigger} themeName={festival.name} />
+      {festival.settings.features?.confetti !== false && (
+        <FestivalConfetti trigger={confettiTrigger} themeName={festival.name} />
+      )}
 
-      {/* Spin & Win wheel popup — appears once per day when festival is active */}
-      <FestivalSpinWheel festivalName={festival.name} />
+      {/* Spin & Win wheel popup — configurable via admin */}
+      <FestivalSpinWheel
+        festivalName={festival.name}
+        enabled={festival.settings.features?.spinWheel !== false}
+        title={festival.settings.spinWheelConfig?.title || "Spin & Win!"}
+        subtitle={festival.settings.spinWheelConfig?.subtitle || "One free spin — win an exclusive festival coupon code"}
+        spinOncePerDay={festival.settings.spinWheelConfig?.spinOncePerDay !== false}
+        segments={festival.settings.spinWheelConfig?.segments}
+      />
 
       {/* Festive sound toggle button — bottom-right corner */}
-      <FestivalSounds />
+      {festival.settings.features?.sounds !== false && (
+        <FestivalSounds />
+      )}
 
       <AnimatePresence>
         <motion.div
@@ -291,12 +311,12 @@ export function FestivalBanner() {
           </div>
 
           {/* Scrolling marquee with sale messages */}
-          {marqueeMessages.length > 0 && (
+          {festival.settings.features?.marquee !== false && marqueeMessages.length > 0 && (
             <div
               className="overflow-hidden py-1 border-t"
               style={{ borderColor: "rgba(255,255,255,0.15)" }}
             >
-              <div className="flex festival-marquee whitespace-nowrap">
+              <div className="flex whitespace-nowrap" style={{ animation: `festival-marquee ${marqueeSpeed}s linear infinite` }}>
                 {[...marqueeMessages, ...marqueeMessages, ...marqueeMessages].map((msg, i) => (
                   <span
                     key={i}
