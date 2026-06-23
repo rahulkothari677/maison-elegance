@@ -34,6 +34,7 @@ export function CheckoutView() {
     addresses,
     isAuthenticated,
     loading: userDataLoading,
+    refreshAll,
   } = useUserData();
 
   // Payment methods — for now, always use local store (cards aren't really stored server-side)
@@ -236,6 +237,8 @@ export function CheckoutView() {
               // Clear cart and show success view
               useStore.getState().clearCart();
               useStore.setState({ lastOrderId: verifyData.orderNumber });
+              // Refresh user data so the new order appears in Profile → Orders
+              refreshAll();
               setView("order-success");
             } else {
               // Verification returned error — but payment may have succeeded
@@ -243,6 +246,8 @@ export function CheckoutView() {
               toast.success("Payment received! Order confirmed.");
               useStore.getState().clearCart();
               useStore.setState({ lastOrderId: verifyData.orderNumber || `PAYMENT_${response.razorpay_payment_id}` });
+              // Refresh user data so the new order appears in Profile → Orders
+              refreshAll();
               setView("order-success");
             }
           } catch (e: any) {
