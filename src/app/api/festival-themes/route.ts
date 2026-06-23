@@ -7,37 +7,55 @@ import { FESTIVAL_PRESETS } from "@/lib/festival-themes";
  * GET /api/festival-themes
  * Public endpoint — returns the currently active festival theme (if any).
  * Also handles auto-activation/deactivation based on startDate/endDate.
+ *
+ * Defensive: if the Prisma client doesn't have the FestivalTheme model
+ * (e.g. postinstall prisma generate hasn't run yet on Vercel), returns
+ * { theme: null } instead of crashing.
  */
 export async function GET() {
   try {
+    // Safety check: if db.festivalTheme doesn't exist, return null
+    // (Prisma client wasn't regenerated with the new schema yet)
+    if (!db || !(db as any).festivalTheme) {
+      return NextResponse.json({ theme: null });
+    }
+
     await ensureFestivalThemeTable();
 
     // Check for auto-activation/deactivation
     const now = new Date();
-    const themes = await db.festivalTheme.findMany();
+    let themes: any[] = [];
+    try {
+      themes = await db.festivalTheme.findMany();
+    } catch (findErr: any) {
+      // Table might not exist yet — return null
+      return NextResponse.json({ theme: null, warning: findErr?.message });
+    }
 
     for (const theme of themes) {
-      // Auto-activate if startDate has passed and endDate hasn't
-      if (
-        !theme.isActive &&
-        theme.startDate &&
-        theme.endDate &&
-        theme.startDate <= now &&
-        theme.endDate > now
-      ) {
-        await db.festivalTheme.update({
-          where: { id: theme.id },
-          data: { isActive: true },
-        });
-        theme.isActive = true;
-      }
-      // Auto-deactivate if endDate has passed
-      if (theme.isActive && theme.endDate && theme.endDate <= now) {
-        await db.festivalTheme.update({
-          where: { id: theme.id },
-          data: { isActive: false },
-        });
-        theme.isActive = false;
+      try {
+        if (
+          !theme.isActive &&
+          theme.startDate &&
+          theme.endDate &&
+          theme.startDate <= now &&
+          theme.endDate > now
+        ) {
+          await db.festivalTheme.update({
+            where: { id: theme.id },
+            data: { isActive: true },
+          });
+          theme.isActive = true;
+        }
+        if (theme.isActive && theme.endDate && theme.endDate <= now) {
+          await db.festivalTheme.update({
+            where: { id: theme.id },
+            data: { isActive: false },
+          });
+          theme.isActive = false;
+        }
+      } catch (updateErr) {
+        // Continue even if auto-activation fails
       }
     }
 

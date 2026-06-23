@@ -57,17 +57,32 @@ export function FestivalBanner() {
   const { setView } = useStore();
 
   useEffect(() => {
+    let mounted = true;
     fetch("/api/festival-themes")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) return null;
+        return r.json();
+      })
       .then((data) => {
-        if (data.theme) {
+        if (!mounted || !data || !data.theme) {
+          // No active theme — clear any leftover styles
+          clearFestivalTheme();
+          return;
+        }
+        try {
           setFestival(data.theme);
           applyFestivalTheme(data.theme.settings);
-        } else {
-          clearFestivalTheme();
+        } catch (e) {
+          // If applying theme fails, don't crash the page
+          console.warn("[FestivalBanner] Failed to apply theme:", e);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Network error — silently ignore, page still works
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Auto-dismiss after sale ends

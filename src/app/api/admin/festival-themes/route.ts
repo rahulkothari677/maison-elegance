@@ -16,7 +16,17 @@ export async function GET() {
   }
 
   try {
-    const dbThemes = await db.festivalTheme.findMany();
+    // Safety check: if db.festivalTheme doesn't exist, return presets only
+    let dbThemes: any[] = [];
+    if (db && (db as any).festivalTheme) {
+      try {
+        await ensureFestivalThemeTable();
+        dbThemes = await db.festivalTheme.findMany();
+      } catch (findErr: any) {
+        // Table might not exist yet — use empty array
+        console.warn("[admin/festival-themes] DB query failed:", findErr?.message);
+      }
+    }
     const dbByName: Record<string, any> = {};
     for (const t of dbThemes) {
       dbByName[t.name] = t;
