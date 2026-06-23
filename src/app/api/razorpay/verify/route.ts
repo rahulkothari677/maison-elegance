@@ -61,8 +61,7 @@ async function ensureOrderTables() {
 
 /**
  * Creates an order using raw SQL — bypasses all foreign key constraints.
- * This is the most reliable way to ensure the order is saved even if
- * the Product table has issues or the Prisma schema is out of sync.
+ * Uses ? placeholders (SQLite/LibSQL syntax, NOT $1 PostgreSQL syntax).
  */
 async function createOrderRaw(params: {
   orderNumber: string;
@@ -80,8 +79,7 @@ async function createOrderRaw(params: {
 
   // Insert the order
   await db.$executeRawUnsafe(
-    `INSERT INTO "Order" ("id", "orderNumber", "userId", "guestEmail", "status", "subtotal", "shipping", "tax", "total", "shippingAddress", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    `INSERT INTO "Order" ("id", "orderNumber", "userId", "guestEmail", "status", "subtotal", "shipping", "tax", "total", "shippingAddress", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     orderId,
     params.orderNumber,
     params.userId,
@@ -100,8 +98,7 @@ async function createOrderRaw(params: {
   for (const item of params.items) {
     const itemId = randomUUID();
     await db.$executeRawUnsafe(
-      `INSERT INTO "OrderItem" ("id", "orderId", "productId", "name", "image", "size", "color", "quantity", "price")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `INSERT INTO "OrderItem" ("id", "orderId", "productId", "name", "image", "size", "color", "quantity", "price") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       itemId,
       orderId,
       item.productId || "unknown",
@@ -119,20 +116,20 @@ async function createOrderRaw(params: {
 
 /**
  * Decrements product stock for each item in the order.
- * Uses raw SQL to avoid foreign key issues. Silently continues if
- * the product doesn't exist in the DB (e.g. demo products).
+ * Uses ? placeholders (SQLite/LibSQL syntax).
  */
 async function decrementStock(items: any[]) {
   for (const item of items) {
     if (!item.productId || item.productId === "unknown") continue;
     try {
       await db.$executeRawUnsafe(
-        `UPDATE "Product" SET "inStock" = MAX(0, "inStock" - $1) WHERE "id" = $2 OR "slug" = $2`,
+        `UPDATE "Product" SET "inStock" = MAX(0, "inStock" - ?) WHERE "id" = ? OR "slug" = ?`,
         item.quantity || 1,
+        item.productId,
         item.productId
       );
     } catch (e) {
-      // Product might not exist in DB — non-fatal
+      console.warn("[razorpay/verify] Stock decrement failed for", item.productId, ":", e);
     }
   }
 }

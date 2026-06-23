@@ -57,31 +57,33 @@ export async function PATCH(
         },
       });
     } catch (prismaErr: any) {
-      // Prisma failed — fall back to raw SQL
+      // Prisma failed — fall back to raw SQL (use ? placeholders for SQLite)
       console.warn("[admin/orders/[id]] Prisma update failed, using raw SQL:", prismaErr?.message);
 
       const updates: string[] = ['"updatedAt" = CURRENT_TIMESTAMP'];
       const values: any[] = [];
-      let paramIdx = 1;
+      let placeholder = "";
 
       if (body.status) {
-        updates.push(`"status" = $${paramIdx++}`);
+        placeholder = "?";
+        updates.push(`"status" = ${placeholder}`);
         values.push(body.status);
       }
       if (body.trackingNumber !== undefined) {
-        updates.push(`"trackingNumber" = $${paramIdx++}`);
+        placeholder = "?";
+        updates.push(`"trackingNumber" = ${placeholder}`);
         values.push(body.trackingNumber);
       }
       values.push(id);
 
       await db.$executeRawUnsafe(
-        `UPDATE "Order" SET ${updates.join(", ")} WHERE "id" = $${paramIdx}`,
+        `UPDATE "Order" SET ${updates.join(", ")} WHERE "id" = ?`,
         ...values
       );
 
       // Fetch the updated order
       const rows = await db.$queryRawUnsafe(
-        `SELECT * FROM "Order" WHERE "id" = $1`,
+        `SELECT * FROM "Order" WHERE "id" = ?`,
         id
       );
       const order = (rows as any[])[0];
@@ -92,7 +94,7 @@ export async function PATCH(
 
       // Fetch items
       const items = await db.$queryRawUnsafe(
-        `SELECT * FROM "OrderItem" WHERE "orderId" = $1`,
+        `SELECT * FROM "OrderItem" WHERE "orderId" = ?`,
         id
       );
 

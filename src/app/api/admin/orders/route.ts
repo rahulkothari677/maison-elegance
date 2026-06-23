@@ -63,16 +63,27 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ orders: [] });
       }
 
-      // Raw SQL query
-      const statusFilter = status && status !== "all" ? `WHERE o."status" = '${status.replace(/'/g, "''")}'` : "";
-      const rows = await db.$queryRawUnsafe(`
-        SELECT o.*, oi.id as item_id, oi."productId", oi.name as item_name, oi.image, oi.size, oi.color, oi.quantity, oi.price as item_price
-        FROM "Order" o
-        LEFT JOIN "OrderItem" oi ON oi."orderId" = o."id"
-        ${statusFilter}
-        ORDER BY o."createdAt" DESC
-        LIMIT 100
-      `);
+      // Raw SQL query — use ? placeholders for SQLite/LibSQL
+      let rows: any[];
+      if (status && status !== "all") {
+        rows = await db.$queryRawUnsafe(
+          `SELECT o.*, oi.id as item_id, oi."productId", oi.name as item_name, oi.image, oi.size, oi.color, oi.quantity, oi.price as item_price
+           FROM "Order" o
+           LEFT JOIN "OrderItem" oi ON oi."orderId" = o."id"
+           WHERE o."status" = ?
+           ORDER BY o."createdAt" DESC
+           LIMIT 100`,
+          status
+        );
+      } else {
+        rows = await db.$queryRawUnsafe(
+          `SELECT o.*, oi.id as item_id, oi."productId", oi.name as item_name, oi.image, oi.size, oi.color, oi.quantity, oi.price as item_price
+           FROM "Order" o
+           LEFT JOIN "OrderItem" oi ON oi."orderId" = o."id"
+           ORDER BY o."createdAt" DESC
+           LIMIT 100`
+        );
+      }
 
       // Group items by order
       const ordersMap: Record<string, any> = {};
