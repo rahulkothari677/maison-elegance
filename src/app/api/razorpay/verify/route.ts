@@ -63,6 +63,7 @@ async function ensureOrderTables() {
 /**
  * Creates an order using raw SQL — bypasses all foreign key constraints.
  * Uses ? placeholders (SQLite/LibSQL syntax, NOT $1 PostgreSQL syntax).
+ * Includes detailed error logging to diagnose why items aren't saving.
  */
 async function createOrderRaw(params: {
   orderNumber: string;
@@ -78,38 +79,118 @@ async function createOrderRaw(params: {
   const orderId = randomUUID();
   const now = new Date().toISOString();
 
-  // Insert the order
-  await db.$executeRawUnsafe(
-    `INSERT INTO "Order" ("id", "orderNumber", "userId", "guestEmail", "status", "subtotal", "shipping", "tax", "total", "shippingAddress", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    orderId,
-    params.orderNumber,
-    params.userId,
-    params.guestEmail,
-    "Paid",
-    params.subtotal,
-    params.shipping,
-    params.tax,
-    params.total,
-    params.shippingAddress || "Not provided",
-    now,
-    now
-  );
+  console.log("[createOrderRaw] Starting order creation:", {
+    orderNumber: params.orderNumber,
+    itemCount: params.items.length,
+    items: params.items.map(i => ({ name: i.name, qty: i.quantity, productId: i.productId })),
+  });
 
-  // Insert order items
-  for (const item of params.items) {
-    const itemId = randomUUID();
+  // Step 1: Insert the order
+  try {
     await db.$executeRawUnsafe(
-      `INSERT INTO "OrderItem" ("id", "orderId", "productId", "name", "image", "size", "color", "quantity", "price") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO "Order" ("id", "orderNumber", "userId", "guestEmail", "status", "subtotal", "shipping", "tax", "total", "shippingAddress", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      orderId,
+      params.orderNumber,
+      params.userId,
+      params.guestEmail,
+      "Paid",
+      params.subtotal,
+      params.shipping,
+      params.tax,
+      params.total,
+      params.shippingAddress || "Not provided",
+      now,
+      now
+    );
+    console.log("[createOrderRaw] Order inserted successfully, ID:", orderId);
+  } catch (orderErr: any) {
+    console.error("[createOrderRaw] Order INSERT FAILED:", orderErr?.message);
+    throw orderErr;
+  }
+
+  // Step 2: Insert order items — try multiple approaches
+  console.log("[createOrderRaw] Inserting", params.items.length, "items...");
+
+  for (let i = 0; i < params.items.length; i++) {
+    const item = params.items[i];
+    const itemId = randomUUID();
+
+    console.log(`[createOrderRaw] Inserting item ${i + 1}:`, {
       itemId,
       orderId,
-      item.productId || "unknown",
-      item.name || "Product",
-      item.image || "",
-      item.size || "N/A",
-      item.color || "N/A",
-      item.quantity || 1,
-      item.price || 0
+      productId: item.productId || "unknown",
+      name: item.name || "Product",
+      quantity: item.quantity || 1,
+      price: item.price || 0,
+    });
+
+    // Approach A: Raw SQL with ? placeholders
+    try {
+      await db.$executeRawUnsafe(
+        `INSERT INTO "OrderItem" ("id", "orderId", "productId", "name", "image", "size", "color", "quantity", "price") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        itemId,
+        orderId,
+        item.productId || "unknown",
+        item.name || "Product",
+        item.image || "",
+        item.size || "N/A",
+        item.color || "N/A",
+        item.quantity || 1,
+        item.price || 0
+      );
+      console.log(`[createOrderRaw] Item ${i + 1} inserted via raw SQL ✓`);
+    } catch (rawErr: any) {
+      console.error(`[createOrderRaw] Item ${i + 1} raw SQL FAILED:`, rawErr?.message);
+
+      // Approach B: Try Prisma's create method
+      try {
+        await db.orderItem.create({
+          data: {
+            id: itemId,
+            orderId: orderId,
+            productId: item.productId || "unknown",
+            name: item.name || "Product",
+            image: item.image || "",
+            size: item.size || "N/A",
+            color: item.color || "N/A",
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+          },
+        });
+        console.log(`[createOrderRaw] Item ${i + 1} inserted via Prisma ✓`);
+      } catch (prismaErr: any) {
+        console.error(`[createOrderRaw] Item ${i + 1} Prisma create FAILED:`, prismaErr?.message);
+
+        // Approach C: Try without productId (in case FK constraint exists)
+        try {
+          await db.$executeRawUnsafe(
+            `INSERT INTO "OrderItem" ("id", "orderId", "name", "image", "size", "color", "quantity", "price") VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            itemId,
+            orderId,
+            item.name || "Product",
+            item.image || "",
+            item.size || "N/A",
+            item.color || "N/A",
+            item.quantity || 1,
+            item.price || 0
+          );
+          console.log(`[createOrderRaw] Item ${i + 1} inserted without productId ✓`);
+        } catch (finalErr: any) {
+          console.error(`[createOrderRaw] Item ${i + 1} ALL approaches FAILED:`, finalErr?.message);
+        }
+      }
+    }
+  }
+
+  // Verify items were saved
+  try {
+    const count = await db.$queryRawUnsafe(
+      `SELECT COUNT(*) as cnt FROM "OrderItem" WHERE "orderId" = ?`,
+      orderId
     );
+    console.log("[createOrderRaw] Items in DB for this order:", (count as any[])[0]?.cnt);
+  } catch (e) {
+    console.warn("[createOrderRaw] Could not verify item count:", e);
   }
 
   return orderId;
