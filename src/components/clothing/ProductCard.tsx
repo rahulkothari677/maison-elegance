@@ -6,6 +6,7 @@ import type { Product } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { useUserData } from "@/lib/use-user-data";
 import { useCurrency } from "@/lib/use-currency";
+import { useFestivalActive } from "@/lib/use-festival";
 import { playSound } from "@/lib/sound";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export function ProductCard({ product }: { product: Product }) {
     toggleWishlist: toggleApiWishlist,
   } = useUserData();
   const { convert } = useCurrency();
+  const festivalName = useFestivalActive();
   const [imgIdx, setImgIdx] = useState(0);
   const [hovering, setHovering] = useState(false);
   const [activeColor, setActiveColor] = useState(0);
@@ -107,6 +109,35 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </div>
+
+        {/* Festival sale stamp — appears on top-right when a festival is active */}
+        {festivalName && product.compareAtPrice && (
+          <div
+            className="absolute top-3 right-14 sm:right-14 z-10 pointer-events-none"
+            style={{
+              animation: "stamp-bounce 0.6s ease-out",
+              transform: "rotate(-12deg)",
+            }}
+          >
+            <div
+              className="px-2.5 py-1 rounded-sm font-bold text-[10px] tracking-wide-luxe uppercase shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, #FF1744, #D50000)",
+                color: "white",
+                border: "2px solid rgba(255,255,255,0.3)",
+                boxShadow: "0 4px 12px rgba(255,23,68,0.5)",
+              }}
+            >
+              {festivalName === "black-friday" && "60% OFF"}
+              {festivalName === "diwali" && "50% OFF"}
+              {festivalName === "christmas" && "40% OFF"}
+              {festivalName === "valentine" && "25% OFF"}
+              {festivalName === "end-of-season" && "70% OFF"}
+              {festivalName === "new-year" && "50% OFF"}
+              {!["black-friday","diwali","christmas","valentine","end-of-season","new-year"].includes(festivalName) && "SALE"}
+            </div>
+          </div>
+        )}
 
         {/* Wishlist button */}
         <button

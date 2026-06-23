@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ArrowRight } from "lucide-react";
+import { X, Sparkles, ArrowRight, Zap, Flame } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { applyFestivalTheme, clearFestivalTheme, type FestivalThemeSettings } from "@/lib/festival-themes";
+import { FestivalParticles } from "./FestivalParticles";
 
 type ActiveFestival = {
   id: string;
@@ -51,6 +52,58 @@ function useCountdown(endDate: string | null) {
   return { timeLeft, active };
 }
 
+// Sale messages for the scrolling marquee — customized per theme
+const MARQUEE_MESSAGES: Record<string, string[]> = {
+  "black-friday": [
+    "🔥 BLACK FRIDAY MEGA SALE",
+    "UP TO 60% OFF EVERYTHING",
+    "FREE SHIPPING ON ALL ORDERS",
+    "EXTRA 10% OFF ON 2+ ITEMS",
+    "USE CODE: BLACK60",
+    "HURRY — ENDS SOON",
+  ],
+  "diwali": [
+    "🪔 DIWALI DHAMAKA",
+    "FLAT 50% OFF SITEWIDE",
+    "FREE GIFTS ON ORDERS ₹5000+",
+    "USE CODE: DIWALI50",
+    "FESTIVAL OF LIGHTS, FESTIVAL OF SAVINGS",
+    "SHOP NOW — LIMITED TIME",
+  ],
+  "christmas": [
+    "🎄 CHRISTMAS COLLECTION",
+    "UP TO 40% OFF LUXURY GIFTS",
+    "FREE GIFT WRAPPING",
+    "ORDER BY DEC 20 FOR CHRISTMAS DELIVERY",
+    "USE CODE: XMAS40",
+    "GIFT THE EXTRAORDINARY",
+  ],
+  "valentine": [
+    "💝 VALENTINE'S EDIT",
+    "25% OFF ROMANTIC GIFTS",
+    "FREE GIFT WITH EVERY ORDER",
+    "USE CODE: LOVE25",
+    "FOR THE ONE YOU LOVE",
+    "SHOP BEFORE THEY'RE GONE",
+  ],
+  "end-of-season": [
+    "🦃 END OF SEASON CLEARANCE",
+    "UP TO 70% OFF",
+    "LAST CHANCE — FINAL REDUCTIONS",
+    "NO CODE NEEDED",
+    "WHEN IT'S GONE, IT'S GONE",
+    "CLEARANCE PRICES",
+  ],
+  "new-year": [
+    "🎊 NEW YEAR, NEW WARDROBE",
+    "UP TO 50% OFF",
+    "START 2026 IN STYLE",
+    "USE CODE: NEWYEAR50",
+    "FRESH ARRIVALS, FRESH PRICES",
+    "CELEBRATE & SAVE",
+  ],
+};
+
 export function FestivalBanner() {
   const [festival, setFestival] = useState<ActiveFestival | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -65,7 +118,6 @@ export function FestivalBanner() {
       })
       .then((data) => {
         if (!mounted || !data || !data.theme) {
-          // No active theme — clear any leftover styles
           clearFestivalTheme();
           return;
         }
@@ -73,19 +125,15 @@ export function FestivalBanner() {
           setFestival(data.theme);
           applyFestivalTheme(data.theme.settings);
         } catch (e) {
-          // If applying theme fails, don't crash the page
           console.warn("[FestivalBanner] Failed to apply theme:", e);
         }
       })
-      .catch(() => {
-        // Network error — silently ignore, page still works
-      });
+      .catch(() => {});
     return () => {
       mounted = false;
     };
   }, []);
 
-  // Auto-dismiss after sale ends
   useEffect(() => {
     if (!festival?.endDate) return;
     const end = new Date(festival.endDate).getTime();
@@ -95,112 +143,159 @@ export function FestivalBanner() {
     }
   }, [festival?.endDate]);
 
-  // ⚠️ Hooks must be called BEFORE any early return (Rules of Hooks).
-  // useCountdown is called unconditionally — it safely handles null endDate.
+  // ⚠️ Hooks must be called BEFORE any early return (Rules of Hooks)
   const { timeLeft, active } = useCountdown(festival?.endDate || null);
+
+  const marqueeMessages = useMemo(() => {
+    if (!festival) return [];
+    return MARQUEE_MESSAGES[festival.name] || MARQUEE_MESSAGES["black-friday"];
+  }, [festival?.name]);
 
   if (!festival || dismissed) return null;
 
-  const { banner } = festival.settings;
+  const { banner, colors } = festival.settings;
   const pad = (n: number) => String(n).padStart(2, "0");
+
+  // Use the theme's accent color for badge backgrounds with dark text
+  // This ensures high contrast on both light and dark festival themes
+  const badgeBg = colors.accent; // gold for most themes
+  const badgeText = colors.accentForeground; // dark text on gold
 
   const handleCta = () => {
     const link = banner.ctaLink || "shop";
     if (link === "shop" || link === "all") {
       setView("shop");
     } else {
-      // Could route to category — for now just go to shop
       setView("shop");
     }
   };
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ height: 0, opacity: 0 }}
-        animate={{ height: "auto", opacity: 1 }}
-        exit={{ height: 0, opacity: 0 }}
-        className="sticky top-0 z-[60] w-full overflow-hidden"
-        style={{
-          background: banner.backgroundCss,
-          color: banner.textColor,
-        }}
-      >
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-center gap-4 relative">
-          {/* Left: discount badge */}
-          <div
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-sm font-bold text-xs tracking-wide-luxe uppercase shrink-0"
-            style={{
-              background: banner.textColor,
-              color: banner.backgroundCss.includes("oklch(0.10") ? "#000" : "#fff",
-            }}
-          >
-            <Sparkles className="h-3 w-3" />
-            {banner.discountBadge}
-          </div>
+    <>
+      {/* Particle effects — fixed overlay across entire viewport */}
+      <FestivalParticles themeName={festival.name} />
 
-          {/* Center: title + subtitle */}
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-            <motion.h2
-              animate={banner.pulseAnimation ? { scale: [1, 1.03, 1] } : {}}
+      <AnimatePresence>
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="sticky top-0 z-[60] w-full overflow-hidden"
+          style={{
+            background: banner.backgroundCss,
+            color: banner.textColor,
+            animation: "festival-glow 3s ease-in-out infinite",
+          }}
+        >
+          {/* Top row: badge + title + countdown + CTA */}
+          <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4 relative">
+            {/* Left: pulsing discount badge */}
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              className="font-serif text-base sm:text-lg lg:text-xl font-bold tracking-wide"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-sm font-bold text-[10px] sm:text-xs tracking-wide-luxe uppercase shrink-0"
+              style={{
+                background: badgeBg,
+                color: badgeText,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              }}
             >
-              {banner.title}
-            </motion.h2>
-            <span className="hidden sm:inline opacity-60">·</span>
-            <span className="text-xs sm:text-sm opacity-90">{banner.subtitle}</span>
+              <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="currentColor" />
+              <span className="hidden sm:inline">{banner.discountBadge}</span>
+              <span className="sm:hidden">{banner.discountBadge.split(" ")[0]}</span>
+            </motion.div>
+
+            {/* Center: title + subtitle */}
+            <div className="flex flex-col items-center text-center min-w-0 flex-1">
+              <motion.h2
+                animate={banner.pulseAnimation ? { scale: [1, 1.03, 1] } : {}}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                className="font-serif text-sm sm:text-lg lg:text-xl font-bold tracking-wide leading-tight truncate w-full"
+              >
+                {banner.title}
+              </motion.h2>
+              <span className="hidden sm:block text-[10px] sm:text-xs opacity-90 truncate w-full">
+                {banner.subtitle}
+              </span>
+            </div>
+
+            {/* Countdown — always visible, glowing */}
+            {banner.showCountdown && active && (
+              <div className="flex items-center gap-1 shrink-0">
+                {[
+                  { label: "D", value: timeLeft.days },
+                  { label: "H", value: timeLeft.hours },
+                  { label: "M", value: timeLeft.minutes },
+                  { label: "S", value: timeLeft.seconds },
+                ].map((unit, i) => (
+                  <div key={unit.label} className="flex items-center gap-0.5 sm:gap-1">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="font-mono text-xs sm:text-base font-bold tabular-nums leading-none px-1 sm:px-1.5 py-0.5 sm:py-1 rounded-sm"
+                        style={{
+                          background: "rgba(0,0,0,0.4)",
+                          backdropFilter: "blur(4px)",
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          minWidth: "24px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {pad(unit.value)}
+                      </div>
+                      <span className="text-[8px] sm:text-[9px] opacity-70 uppercase mt-0.5">{unit.label}</span>
+                    </div>
+                    {i < 3 && <span className="opacity-50 font-bold -mt-3">:</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* CTA button */}
+            <button
+              onClick={handleCta}
+              className="shrink-0 inline-flex items-center gap-1 px-2.5 sm:px-4 py-1.5 rounded-sm font-medium text-[10px] sm:text-xs tracking-wide-luxe uppercase transition-transform hover:scale-105 active:scale-95"
+              style={{
+                background: badgeBg,
+                color: badgeText,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              }}
+            >
+              <span className="hidden sm:inline">{banner.ctaText}</span>
+              <span className="sm:hidden">Shop</span>
+              <ArrowRight className="h-3 w-3" />
+            </button>
+
+            {/* Dismiss button */}
+            <button
+              onClick={() => setDismissed(true)}
+              aria-label="Dismiss"
+              className="absolute -right-1 -top-1 sm:right-2 sm:top-1/2 sm:-translate-y-1/2 w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
 
-          {/* Countdown (if active) */}
-          {banner.showCountdown && active && (
-            <div className="hidden md:flex items-center gap-1.5 shrink-0">
-              {[
-                { label: "D", value: timeLeft.days },
-                { label: "H", value: timeLeft.hours },
-                { label: "M", value: timeLeft.minutes },
-                { label: "S", value: timeLeft.seconds },
-              ].map((unit, i) => (
-                <div key={unit.label} className="flex items-center gap-1.5">
-                  <div
-                    className="text-center min-w-[28px] px-1.5 py-1 rounded-sm font-mono text-sm font-bold tabular-nums"
-                    style={{
-                      background: "rgba(255,255,255,0.15)",
-                      backdropFilter: "blur(4px)",
-                    }}
+          {/* Scrolling marquee with sale messages */}
+          {marqueeMessages.length > 0 && (
+            <div
+              className="overflow-hidden py-1 border-t"
+              style={{ borderColor: "rgba(255,255,255,0.15)" }}
+            >
+              <div className="flex festival-marquee whitespace-nowrap">
+                {[...marqueeMessages, ...marqueeMessages, ...marqueeMessages].map((msg, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center text-[10px] sm:text-xs font-medium tracking-wide-luxe uppercase px-4 sm:px-6"
                   >
-                    {pad(unit.value)}
-                  </div>
-                  <span className="text-[10px] opacity-70 uppercase">{unit.label}</span>
-                  {i < 3 && <span className="opacity-50">:</span>}
-                </div>
-              ))}
+                    <Sparkles className="h-3 w-3 mr-2 opacity-70" />
+                    {msg}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
-
-          {/* CTA button */}
-          <button
-            onClick={handleCta}
-            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-sm font-medium text-xs tracking-wide-luxe uppercase transition-transform hover:scale-105"
-            style={{
-              background: banner.textColor,
-              color: banner.backgroundCss.includes("oklch(0.10") ? "#000" : "#fff",
-            }}
-          >
-            {banner.ctaText}
-            <ArrowRight className="h-3 w-3" />
-          </button>
-
-          {/* Dismiss button */}
-          <button
-            onClick={() => setDismissed(true)}
-            aria-label="Dismiss"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </motion.div>
-    </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
 }
