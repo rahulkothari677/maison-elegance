@@ -160,12 +160,13 @@ export function ProductCard({ product }: { product: Product }) {
           <Heart className={cn("h-4 w-4", isWishlisted && "fill-current", heartBurst && "animate-heart-burst")} />
         </button>
 
-        {/* Quick view + Compare buttons (top-left, appears on hover) */}
+        {/* Quick view + Compare buttons — always visible on mobile, hover on desktop */}
         <div
           className={cn(
             "absolute top-3 left-3 flex flex-col gap-2 transition-all",
             product.badge || lowStock ? "top-14" : "top-3",
-            hovering ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 lg:opacity-0"
+            "opacity-100 translate-y-0 lg:opacity-0 lg:-translate-y-2",
+            hovering && "lg:opacity-100 lg:translate-y-0"
           )}
         >
           <button

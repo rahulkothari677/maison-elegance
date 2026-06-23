@@ -505,6 +505,7 @@ export function clearFestivalTheme() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
 
+  // Remove festival-specific inline CSS variable overrides
   root.style.removeProperty("--background");
   root.style.removeProperty("--foreground");
   root.style.removeProperty("--card");
@@ -523,6 +524,27 @@ export function clearFestivalTheme() {
   root.style.removeProperty("--radius");
 
   root.removeAttribute("data-festival");
+
+  // Re-apply the Theme Studio's active theme (if any) so the site
+  // doesn't fall back to CSS defaults after clearing festival overrides.
+  // This fetches the active theme from the API and applies it.
+  fetch("/api/themes/active")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (data?.theme?.settings) {
+        // Import applyTheme dynamically to avoid circular dependency
+        import("./use-theme-settings").then(({ applyTheme }) => {
+          applyTheme(data.theme.settings);
+          console.log("[clearFestivalTheme] Re-applied Theme Studio theme");
+        }).catch(() => {
+          // If import fails, the CSS defaults from globals.css will be used
+          console.log("[clearFestivalTheme] No Theme Studio theme to re-apply");
+        });
+      }
+    })
+    .catch(() => {
+      // API failed — CSS defaults from globals.css will be used
+    });
 }
 
 // ─── Deep clone a preset (so admin can edit without mutating) ────────────────
